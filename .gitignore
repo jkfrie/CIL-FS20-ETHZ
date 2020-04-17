@@ -1,0 +1,9 @@
+## Dont upload these files to Github
+
+# ignore virtualenv
+/venv
+
+# ignore pycache and IDEA files
+.idea
+__pycache__
+
