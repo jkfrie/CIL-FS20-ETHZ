@@ -4,7 +4,7 @@ try:
     from google.colab import drive
     import os
 
-    # Only clone repos if not done yet
+    # Clone repos if not done yet
     if 'CIL-FS20' not in os.getcwd():
       !git clone https://username:password@github.com/jasonkfriedman/CIL-FS20.git
       !git clone https://github.com/rmenta/CIL-FS20-Data.git
@@ -16,6 +16,12 @@ try:
       !rm training_images/groundtruth/* training_images/images/*
       !mv ../CIL-FS20-Data/training_images/groundtruth/* training_images/groundtruth/
       !mv ../CIL-FS20-Data/training_images/images/* training_images/images/
+
+    # Check if running on GPU
+    import tensorflow as tf
+    device_name = tf.test.gpu_device_name()
+    if device_name != '/device:GPU:0':
+      raise SystemError('GPU device not found')
 except ImportError:
     print('Not running in Colab')
     pass
