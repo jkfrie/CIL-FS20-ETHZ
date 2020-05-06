@@ -1,9 +1,21 @@
 ```python
-# If running in Google Colab, mount drive
+# If running in Google Colab, pull repo and training data
 try:
     from google.colab import drive
-    drive.mount('/content/drive')
-    %cd '/content/drive/My Drive/CIL-FS20'
+    import os
+
+    # Only clone repos if not done yet
+    if 'CIL-FS20' not in os.getcwd():
+      !git clone https://username:password@github.com/jasonkfriedman/CIL-FS20.git
+      !git clone https://github.com/rmenta/CIL-FS20-Data.git
+
+      # Run code inside repo
+      %cd CIL-FS20
+
+      # Use new training data
+      !rm training_images/groundtruth/* training_images/images/*
+      !mv ../CIL-FS20-Data/training_images/groundtruth/* training_images/groundtruth/
+      !mv ../CIL-FS20-Data/training_images/images/* training_images/images/
 except ImportError:
     print('Not running in Colab')
     pass
@@ -77,12 +89,8 @@ n_test = len(files_test)
 
 # Load list of numpy arrays of training images and labels
 print("Loading " + str(n) + " training images")
-training_image_list = []
-training_label_list = []
-for i in range(n):
-    print("Loading training image {:04d}\r".format(i)),
-    training_image_list.append(imageio.imread(training_image_dir + files_image[i]))
-    training_label_list.append(imageio.imread(training_label_dir + files_label[i]))
+training_image_list = [imageio.imread(training_image_dir + files_image[i]) for i in range(n)]
+training_label_list = [imageio.imread(training_label_dir + files_label[i]) for i in range(n)]
 
 # Load list of numpy arrays of test images
 print("Loading " + str(n_test) + " test images")
