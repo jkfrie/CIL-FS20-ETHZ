@@ -1,12 +1,22 @@
 ```python
 # If running in Google Colab, mount drive
+print('Check if running in Colab...')
 try:
     from google.colab import drive
+    print('Running in Colab!')
     drive.mount('/content/drive')
     %cd '/content/drive/My Drive/CIL-FS20'
 except ImportError:
-    print('Not running in Colab')
-    pass
+    print('Running locally!')
+
+    #Check python version
+    from platform import python_version
+    print('Current python version: {}'.format(python_version()))
+
+    # Check available GPUs
+    import tensorflow as tf
+    no_GPUs_available = len(tf.config.experimental.list_physical_devices('GPU'))
+    print("Number of GPUs Available: {}".format(no_GPUs_available))
 ```
 
 
