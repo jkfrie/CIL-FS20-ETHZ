@@ -105,14 +105,6 @@ print("TEST:")
 print(test_image_list[0].shape)
 ```
 
-
-```python
-# Make sure label masks only have values 1 or zero
-thresh_val = 0.5
-training_label = (training_label > thresh_val).astype(np.uint8)
-print(np.unique(training_label, return_counts=True, axis=None))
-```
-
 ## Padd Images
 Training images have size 400x400 and test images have size 608x608. So we need to pad training images to same size, 
 for that I use mirror padding for now.
@@ -159,6 +151,14 @@ training_label = np.expand_dims(np.array(training_label_padded_list), -1)
 test_image = np.array(test_image_list)
 print(training_image.shape)
 print(training_label.shape)
+```
+
+
+```python
+# Make sure label masks only have values 1 or zero
+thresh_val = 0.5
+training_label = (training_label > thresh_val).astype(np.uint8)
+print(np.unique(training_label, return_counts=True, axis=None))
 ```
 
 ## Augment Training Data
