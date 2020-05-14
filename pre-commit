@@ -1,0 +1,20 @@
+#!/bin/bash
+
+notebook_is_updated() {
+  echo "Check if notebook has been updated"
+  git diff --cached --name-only | grep -x *.ipynb
+}
+
+convert_notebook_and_add() {
+  echo "Converting notebook to markdown"
+  jupyter nbconvert --ClearOutputPreprocessor.enabled=True --to markdown *.ipynb
+
+  echo "Adding markdown version of notebook to commit"
+  git add *.md
+}
+
+echo "Running pre-commit hook"
+if notebook_is_updated; then
+  echo "Notebook has been updated!"
+  convert_notebook_and_add
+fi
