@@ -83,6 +83,7 @@ def crop_images(images, padding):
     width = images.shape[2]
     return images[:, padding:height-padding, padding:width-padding]
 
+
 def patchify(images, width, height, stride):
     """
     Splits up images of np.array 'images' into patches with 'width' and 'height',
