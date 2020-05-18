@@ -28,7 +28,7 @@ def add_flipped_images(images):
     flipped_images = np.concatenate((images, np.array(flipped_images)), axis=0)
 
     if (unsqueeze):
-        np.expand_dims(flipped_images, -1)
+        flipped_images = np.expand_dims(flipped_images, -1)
 
     return flipped_images
 
@@ -55,7 +55,7 @@ def add_rotated_images(images):
     rotated_images = np.concatenate((images, np.array(rotated_images)), axis=0)
 
     if (unsqueeze):
-        np.expand_dims(rotated_images, -1)
+        rotated_images = np.expand_dims(rotated_images, -1)
 
     return rotated_images
 
@@ -71,6 +71,17 @@ def padd_images(images, padding, padding_type=cv2.BORDER_REFLECT):
     n = images.shape[0]
     return np.array([cv2.copyMakeBorder(images[i], padding, padding, padding, padding, padding_type) for i in range(n)])
 
+
+def crop_images(images, padding):
+    """
+    Crop padding on each side of the image
+    :param images: np array of images
+    :param padding: amount of pixels to crop on each side
+    :return: np array of cropped images
+    """
+    height = images.shape[1]
+    width = images.shape[2]
+    return images[:, padding:height-padding, padding:width-padding]
 
 def patchify(images, width, height, stride):
     """
