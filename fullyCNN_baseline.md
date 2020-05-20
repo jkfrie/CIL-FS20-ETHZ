@@ -64,7 +64,7 @@ IMG_WIDTH = 608
 IMG_HEIGHT = 608
 EPOCHS = 100
 LEARNING_RATE = 0.0001
-BATCH_SIZE = 16
+BATCH_SIZE = 8
 rnd_seed = 4
 ```
 
@@ -284,31 +284,49 @@ plt.show()
 
 ## Loss Function and Accuracy Metric
 - Accuracy: Intersection of prediction to label image over Union
-- Loss : Soft Dice Loss (Measure of interleaving of prediction image and label image)
+- Loss :
+    - Dice Coef Loss (https://arxiv.org/pdf/1606.04797v1.pdf)
+    - Soft Dice Loss (Measure of interleaving of prediction image and label image)
+    - Jaccard Distance
 
 Source: https://towardsdatascience.com/metrics-to-evaluate-your-semantic-segmentation-model-6bcb99
 
 
 ```python
 from keras import backend as K
+
 def iou_coef(y_true, y_pred, smooth=1):
-  intersection = K.sum(K.abs(y_true * y_pred), axis=[1,2,3])
-  union = K.sum(y_true,[1,2,3])+K.sum(y_pred,[1,2,3])-intersection
-  iou = K.mean((intersection + smooth) / (union + smooth), axis=0)
-  
-  return iou
-```
+    intersection = K.sum(K.abs(y_true * y_pred), axis=[1,2,3])
+    union = K.sum(y_true,[1,2,3])+K.sum(y_pred,[1,2,3])-intersection
+    iou = K.mean((intersection + smooth) / (union + smooth), axis=0)
+    return iou
 
+def dice_coef(y_true, y_pred, smooth=1):
+    """
+    Dice = (2*|X & Y|)/ (|X|+ |Y|)
+         =  2*sum(|A*B|)/(sum(A^2)+sum(B^2))
+    ref: https://arxiv.org/pdf/1606.04797v1.pdf
+    """
+    intersection = K.sum(K.abs(y_true * y_pred), axis=-1)
+    return (2. * intersection + smooth) / (K.sum(K.square(y_true),-1) + K.sum(K.square(y_pred),-1) + smooth)
 
-```python
-def dice_coef(y_true, y_pred, smooth = 1):
+def dice_coef_loss(y_true, y_pred):
+    return 1-dice_coef(y_true, y_pred)
+
+def soft_dice_coef(y_true, y_pred, smooth = 1):
     y_true_f = K.flatten(y_true)
     y_pred_f = K.flatten(y_pred)
     intersection = K.sum(y_true_f * y_pred_f)
     return (2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
 
 def soft_dice_loss(y_true, y_pred):
-    return 1-dice_coef(y_true, y_pred)
+    return 1-soft_dice_coef(y_true, y_pred)
+
+def jaccard_distance(y_true, y_pred, smooth=100):
+    intersection = K.sum(K.abs(y_true * y_pred), axis=-1)
+    sum_ = K.sum(K.abs(y_true) + K.abs(y_pred), axis=-1)
+    jac = (intersection + smooth) / (sum_ - intersection + smooth)
+    return (1 - jac) * smooth
 ```
 
 ## Model: Fully CNN built in Keras
@@ -417,7 +435,7 @@ lr_reducer = ReduceLROnPlateau(monitor='val_loss',
 opt = keras.optimizers.adam(LEARNING_RATE)
 model.compile(
       optimizer=opt,
-      loss=soft_dice_loss,
+      loss=dice_coef_loss,
       metrics=[iou_coef])
 ```
 
@@ -460,7 +478,7 @@ plt.show()
 
 
 ```python
-model = load_model("./Models/fullyCNN_temp.h5", custom_objects={'soft_dice_loss': soft_dice_loss, 'iou_coef': iou_coef})
+model = load_model("./Models/fullyCNN_temp.h5", custom_objects={'dice_coef_loss': dice_coef_loss, 'iou_coef': iou_coef})
 #model.evaluate(test_images, test_label)
 predictions = model.predict(test_image, verbose=1)
 ```
