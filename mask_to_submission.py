@@ -18,7 +18,6 @@ def patch_to_label(patch):
 
 def mask_to_submission_strings(image_filename):
     """Reads a single image and outputs the strings that should go into the submission file"""
-    print(image_filename)
     img_number = int(re.search(r"\d+", image_filename).group(0))
     im = mpimg.imread(image_filename)
     patch_size = 16
@@ -36,6 +35,9 @@ def masks_to_submission(submission_filename, *image_filenames):
         for fn in image_filenames[0:]:
             print(fn)
             f.writelines('{}\n'.format(s) for s in mask_to_submission_strings(fn))
+
+def nparray_masks_to_submission(submission_filename, *image_filenames):
+    return
 
 
 if __name__ == '__main__':

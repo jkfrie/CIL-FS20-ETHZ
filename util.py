@@ -117,7 +117,7 @@ def unpatchify(patches, width, height, img_width, img_height, stride):
     ''' TODO stride '''
     images = []
     for i in range(0, patches.shape[0], img_height // height * img_width // width):
-        cur_image = np.zeros([img_height, img_width, patches.shape[-1]], dtype=np.uint8)
+        cur_image = np.zeros([img_height, img_width, patches.shape[-1]], dtype=np.float64)
         for x in range(0, cur_image.shape[0], height):
             for y in range(0, cur_image.shape[1], width):
                 cur_image[x:x + height, y:y + width] = patches[i + (x // height) * (img_height // height) + y // width]

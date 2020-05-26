@@ -64,7 +64,7 @@ IMG_WIDTH = 608
 IMG_HEIGHT = 608
 EPOCHS = 100
 LEARNING_RATE = 0.0001
-BATCH_SIZE = 8
+BATCH_SIZE = 4
 rnd_seed = 4
 ```
 
@@ -156,9 +156,11 @@ print(training_label.shape)
 
 ```python
 # Make sure label masks only have values 1 or zero
-thresh_val = 0.5
-training_label = (training_label > thresh_val).astype(np.uint8)
+#thresh_val = 0.5
+#training_label = (training_label > thresh_val).astype(np.uint8)
+training_label = training_label/255
 print(np.unique(training_label, return_counts=True, axis=None))
+print(training_label.dtype)
 ```
 
 ## Augment Training Data
@@ -514,11 +516,18 @@ plt.show()
 ```
 
 ## Create Submission File
+Multiply image by 255 and convert to unit8 before storing s.t. it gets read out correctly by mask_to_submission!
 
 
 ```python
-result_dir = './Results/Prediction_Images/'
-[imageio.imwrite(result_dir + files_test[i], predictions[i]) for i in range(n_test)]
+predictions = np.squeeze(predictions*255)
+predictions = predictions.astype(np.uint8)
+result_dir = './Results/Prediction_Images/fullyCNN_baseline/'
+
+#print(predictions.shape)
+#[print(predictions[i].shape) for i in range(n_test)]
+
+[imageio.imwrite(result_dir + files_test[i], predictions[i],) for i in range(n_test)]
 files_predictions = os.listdir(result_dir)
 files_predictions = [result_dir + files_predictions[i] for i in range(n_test)]
 masks_to_submission('./Results/Submissions/fullyCNN_baseline_19_April.csv', *files_predictions)

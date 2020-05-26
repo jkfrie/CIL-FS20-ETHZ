@@ -147,9 +147,12 @@ print(test_images.shape)
 
 ```python
 # Make sure label masks only have values 1 or zero
-thresh_val = 0.5
-training_labels = (training_labels > thresh_val).astype(np.uint8)
-print(np.unique(training_labels, return_counts=True, axis=None))
+#thresh_val = 0.5
+#training_labels = (training_labels > thresh_val).astype(np.int64)
+training_labels = training_labels/255
+training_labels = training_labels.astype(np.float32)
+print(training_labels.dtype)
+#print(np.unique(training_labels, return_counts=True, axis=None))
 ```
 
 ## Augment Training Data
@@ -419,7 +422,7 @@ test_images = util.unpatchify(test_images, 152, 152, 608, 608, 0)
 
 
 ```python
-thresh_val = 0.5
+thresh_val = 0.25
 predicton_threshold = (predictions > thresh_val).astype(np.uint8)
 
 index = random.randint(0, len(predictions)-1)
@@ -448,13 +451,25 @@ plt.show()
 ```
 
 ## Create Submission File
+Multiply image by 255 and convert to unit8 before storing s.t. it gets read out correctly by mask_to_submission!
 
 
 ```python
-result_dir = './Results/Prediction_Images/'
-[imageio.imwrite(result_dir + files_test[i], predictions[i]) for i in range(n_test)]
+predictions = np.squeeze(predictions*255)
+predictions = predictions.astype(np.uint8)
+result_dir = './Results/Prediction_Images/fullyCNN_patches/'
+
+#print(predictions.shape)
+#[print(predictions[i].shape) for i in range(n_test)]
+
+[imageio.imwrite(result_dir + files_test[i], predictions[i],) for i in range(n_test)]
 files_predictions = os.listdir(result_dir)
 files_predictions = [result_dir + files_predictions[i] for i in range(n_test)]
 masks_to_submission('./Results/Submissions/fullyCNN_patches_19_April.csv', *files_predictions)
 print('Submission ready')
+```
+
+
+```python
+
 ```
