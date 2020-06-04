@@ -61,7 +61,7 @@ IMG_WIDTH = 608
 IMG_HEIGHT = 608
 EPOCHS = 100
 LEARNING_RATE = 0.0001
-BATCH_SIZE = 4
+BATCH_SIZE = 1
 
 rnd_seed = 4
 np.random.seed(rnd_seed)
@@ -434,7 +434,7 @@ lr_reducer = ReduceLROnPlateau(monitor='val_loss',
 opt = keras.optimizers.adam(LEARNING_RATE)
 model.compile(
       optimizer=opt,
-      loss=dice_coef_loss,
+      loss=jaccard_distance,
       metrics=[iou_coef])
 ```
 
