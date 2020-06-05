@@ -431,6 +431,7 @@ lr_reducer = ReduceLROnPlateau(monitor='val_loss',
                                patience=6,
                                verbose=1,
                                epsilon=1e-4)
+early_stopper = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3, verbose=1)
 ```
 
 ## Model Training
@@ -451,7 +452,7 @@ history = model.fit(training_image,
                     validation_data =(validation_image, validation_label),
                     epochs=EPOCHS,
                     batch_size = BATCH_SIZE,
-                    callbacks = [checkpointer, csv_logger, lr_reducer]
+                    callbacks = [checkpointer, csv_logger, lr_reducer, early_stopper]
                     )
 ```
 
