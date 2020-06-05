@@ -21,6 +21,12 @@ except ImportError:
 
 
 ```python
+# Name of the current model
+MODEL_NAME = 'fullyCNN_test'
+```
+
+
+```python
 import matplotlib
 import numpy as np
 import pandas as pd
@@ -413,13 +419,13 @@ model.summary()
 
 ```python
 #tbc=TensorBoardColab()
-model_path = "./Models/fullyCNN_temp.h5"
+model_path = "./Models/{}_model.h5".format(MODEL_NAME)
 checkpointer = ModelCheckpoint(model_path,
                              monitor="val_loss",
                              mode="min",
                              save_best_only = True,
                              verbose=1)
-csv_logger = CSVLogger("./Logs/fullyCNN_log.csv", separator=',', append=False)
+csv_logger = CSVLogger("./Logs/{}_log.csv".format(MODEL_NAME), separator=',', append=False)
 lr_reducer = ReduceLROnPlateau(monitor='val_loss',
                                factor=0.1,
                                patience=6,
@@ -440,7 +446,6 @@ model.compile(
 
 
 ```python
-# Labels are allready 1 or 0 now!
 history = model.fit(training_image,
                     training_label,
                     validation_data =(validation_image, validation_label),
@@ -453,7 +458,7 @@ history = model.fit(training_image,
 
 ```python
 # Show a training report
-training_info = pd.read_csv('./Logs/fullyCNN_log.csv', header=0)
+training_info = pd.read_csv('./Logs/{}_log.csv'.format(MODEL_NAME), header=0)
 
 acc1, = plt.plot(training_info['epoch'], training_info['iou_coef'])
 acc2, = plt.plot(training_info['epoch'], training_info['val_iou_coef'])
@@ -477,9 +482,9 @@ plt.show()
 
 
 ```python
-model = load_model("./Models/fullyCNN_temp.h5", custom_objects={'jaccard_distance': jaccard_distance, 'iou_coef': iou_coef})
+model = load_model("./Models/{}_model.h5".format(MODEL_NAME), custom_objects={'jaccard_distance': jaccard_distance, 'iou_coef': iou_coef})
 #model.evaluate(test_images, test_label)
-predictions = model.predict(test_image, verbose=1)
+predictions = model.predict(test_image, batch_size=4, verbose=1)
 ```
 
 
@@ -519,7 +524,8 @@ Multiply image by 255 and convert to unit8 before storing s.t. it gets read out 
 ```python
 predictions = np.squeeze(predictions*255)
 predictions = predictions.astype(np.uint8)
-result_dir = './Results/Prediction_Images/fullyCNN_baseline/'
+result_dir = './Results/Prediction_Images/{}/'.format(MODEL_NAME)
+os.makedirs(result_dir, exist_ok=True)
 
 #print(predictions.shape)
 #[print(predictions[i].shape) for i in range(n_test)]
@@ -527,6 +533,6 @@ result_dir = './Results/Prediction_Images/fullyCNN_baseline/'
 [imageio.imwrite(result_dir + files_test[i], predictions[i],) for i in range(n_test)]
 files_predictions = os.listdir(result_dir)
 files_predictions = [result_dir + files_predictions[i] for i in range(n_test)]
-masks_to_submission('./Results/Submissions/fullyCNN_baseline_19_April.csv', *files_predictions)
+masks_to_submission('./Results/Submissions/{}.csv'.format(MODEL_NAME), *files_predictions)
 print('Submission ready')
 ```
