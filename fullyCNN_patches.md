@@ -423,7 +423,7 @@ plt.show()
 ```python
 model = load_model("./Models/{}_model.h5".format(MODEL_NAME), custom_objects={'combined_loss': combined_loss, 'iou_coef': iou_coef})
 #model.evaluate(test_images, test_label)
-predictions = model.predict(test_image, batch_size=4, verbose=1)
+predictions = model.predict(test_images, batch_size=4, verbose=1)
 ```
 
 
