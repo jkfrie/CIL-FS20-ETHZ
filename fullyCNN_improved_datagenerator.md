@@ -96,8 +96,8 @@ training_image_list = []
 training_label_list = []
 for i in range(n):
     print("Loading training image {:04d}\r".format(i)),
-    training_image_list.append(imageio.imread(training_image_dir + files_image[i]))
-    training_label_list.append(imageio.imread(training_label_dir + files_label[i]))
+    training_image_list.append(imageio.imread(training_image_dir + files_image[i], pilmode="RGB"))
+    training_label_list.append(imageio.imread(training_label_dir + files_label[i], pilmode="L"))
 
 # Load list of numpy arrays of test images
 print("Loading " + str(n_test) + " test images")
@@ -117,8 +117,16 @@ for that I use mirror padding for now.
 
 ```python
 # Mirror padd all training images to get same size as test images
-training_image_padded_list = [cv2.copyMakeBorder(training_image_list[i],104,104,104,104,cv2.BORDER_REFLECT) for i in range(n)]
-training_label_padded_list = [cv2.copyMakeBorder(training_label_list[i],104,104,104,104,cv2.BORDER_REFLECT) for i in range(n)]
+training_image_padded_list = []
+training_label_padded_list = []
+for i in range(n):
+    training_image = training_image_list[i]
+    training_label = training_label_list[i]
+    height, width, _ = training_image.shape
+    pad_y = int((IMG_HEIGHT - height) / 2)
+    pad_x = int((IMG_WIDTH - height) / 2)
+    training_image_padded_list.append(cv2.copyMakeBorder(training_image,pad_y,pad_y,pad_x,pad_x,cv2.BORDER_REFLECT))
+    training_label_padded_list.append(cv2.copyMakeBorder(training_label,pad_y,pad_y,pad_x,pad_x,cv2.BORDER_REFLECT))
 
 # Plot random Sample of images
 index = random.randint(0, n-1)
