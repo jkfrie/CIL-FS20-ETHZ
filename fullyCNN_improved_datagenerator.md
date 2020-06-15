@@ -68,7 +68,7 @@ IMG_HEIGHT = 608
 EPOCHS = 100
 STEPS_PER_EPOCH = 2000
 LEARNING_RATE = 0.0001
-BATCH_SIZE = 1
+BATCH_SIZE = 2
 rnd_seed = 4
 np.random.seed(rnd_seed)
 ```
