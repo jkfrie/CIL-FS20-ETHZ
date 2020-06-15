@@ -30,7 +30,7 @@ import os,sys
 from keras.models import Model, load_model
 from keras.layers import Input
 from keras.layers.core import Dropout, Lambda
-from keras.layers.convolutional import Conv2D, Conv2DTranspose
+from keras.layers.convolutional import Conv2D, Conv2DTranspose, UpSampling2D, Cropping2D
 from keras.layers.pooling import MaxPooling2D
 from keras.preprocessing.image import ImageDataGenerator
 from keras.layers.merge import concatenate
@@ -38,6 +38,7 @@ from keras import optimizers
 from keras.layers import BatchNormalization
 from tensorflow.keras.metrics import MeanIoU
 from keras import backend as K
+from keras.backend import binary_crossentropy
 import keras
 import random
 from sklearn.model_selection import train_test_split
@@ -59,6 +60,9 @@ import natsort
 
 
 ```python
+# Name of the current model
+MODEL_NAME = 'fullyCNN_datagenerator'
+
 IMG_WIDTH = 608
 IMG_HEIGHT = 608
 EPOCHS = 100
@@ -163,6 +167,10 @@ training_label = training_label/255
 training_label = training_label.astype(np.float32)
 #print(np.unique(training_label, return_counts=True, axis=None))
 print(training_label.dtype)
+
+# Get a validation set
+training_image, validation_image, training_label, validation_label = train_test_split(
+    training_image, training_label, test_size=0.1, random_state=rnd_seed)
 ```
 
 ## Augment Training Data
@@ -189,16 +197,16 @@ seed = 1
 image_generator = image_datagen.flow(
     training_image,
     batch_size=BATCH_SIZE,
-    save_to_dir="training_images_augmented/images/",
-    save_prefix="",
-    save_format="png",
+    #save_to_dir="training_images_augmented/images/",
+    #save_prefix="",
+    #save_format="png",
     seed=seed)
 mask_generator = mask_datagen.flow(
     training_label,
     batch_size=BATCH_SIZE,
-    save_to_dir="training_images_augmented/groundtruth/",
-    save_prefix="",
-    save_format="png",
+    #save_to_dir="training_images_augmented/groundtruth/",
+    #save_prefix="",
+    #save_format="png",
     seed=seed)
 
 # Combine generators into one which yields image and masks
@@ -250,6 +258,27 @@ def jaccard_distance(y_true, y_pred, smooth=100):
     sum_ = K.sum(K.abs(y_true) + K.abs(y_pred), axis=-1)
     jac = (intersection + smooth) / (sum_ - intersection + smooth)
     return (1 - jac) * smooth
+
+def jaccard_coef(y_true, y_pred, smooth = 1e-12):
+    intersection = K.sum(y_true * y_pred, axis=[0, 1, 2])
+    sum_ = K.sum(y_true + y_pred, axis=[0, 1, 2])
+
+    jac = (intersection + smooth) / (sum_ - intersection + smooth)
+
+    return K.mean(jac)
+
+def jaccard_coef_int(y_true, y_pred):
+    y_pred_pos = K.round(K.clip(y_pred, 0, 1))
+
+    intersection = K.sum(y_true * y_pred_pos, axis=[0, -1, -2])
+    sum_ = K.sum(y_true + y_pred_pos, axis=[0, -1, -2])
+
+    jac = (intersection + smooth) / (sum_ - intersection + smooth)
+
+    return K.mean(jac)
+
+def combined_loss(y_true, y_pred):
+    return -K.log(jaccard_coef(y_true, y_pred)) + binary_crossentropy(y_pred, y_true)
 ```
 
 ## Model: Fully CNN built in Keras
@@ -258,70 +287,81 @@ def jaccard_distance(y_true, y_pred, smooth=100):
 ```python
 inputs = Input((IMG_HEIGHT, IMG_WIDTH, 3))
 
-conv1 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(inputs)
-conv1 = BatchNormalization() (conv1)
-conv1 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv1)
-conv1 = BatchNormalization() (conv1)
+conv1 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_uniform')(inputs)
+conv1 = BatchNormalization()(conv1)
+conv1 = keras.layers.advanced_activations.ELU()(conv1)
+conv1 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_uniform')(conv1)
+conv1 = BatchNormalization()(conv1)
+conv1 = keras.layers.advanced_activations.ELU()(conv1)
 pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
 
-conv2 = Conv2D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(pool1)
-conv2 = BatchNormalization() (conv2)
-conv2 = Conv2D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv2)
-conv2 = BatchNormalization() (conv2)
+conv2 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_uniform')(pool1)
+conv2 = BatchNormalization()(conv2)
+conv2 = keras.layers.advanced_activations.ELU()(conv2)
+conv2 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_uniform')(conv2)
+conv2 = BatchNormalization()(conv2)
+conv2 = keras.layers.advanced_activations.ELU()(conv2)
 pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
 
-conv3 = Conv2D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(pool2)
-conv3 = BatchNormalization() (conv3)
-conv3 = Conv2D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv3)
-conv3 = BatchNormalization() (conv3)
+conv3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_uniform')(pool2)
+conv3 = BatchNormalization()(conv3)
+conv3 = keras.layers.advanced_activations.ELU()(conv3)
+conv3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_uniform')(conv3)
+conv3 = BatchNormalization()(conv3)
+conv3 = keras.layers.advanced_activations.ELU()(conv3)
 pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
 
-conv4 = Conv2D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(pool3)
-conv4 = BatchNormalization() (conv4)
-conv4 = Conv2D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv4)
-conv4 = BatchNormalization() (conv4)
-drop4 = Dropout(0.5)(conv4)
-pool4 = MaxPooling2D(pool_size=(2, 2))(drop4)
+conv4 = Conv2D(256, (3, 3), padding='same', kernel_initializer='he_uniform')(pool3)
+conv4 = BatchNormalization()(conv4)
+conv4 = keras.layers.advanced_activations.ELU()(conv4)
+conv4 = Conv2D(256, (3, 3), padding='same', kernel_initializer='he_uniform')(conv4)
+conv4 = BatchNormalization()(conv4)
+conv4 = keras.layers.advanced_activations.ELU()(conv4)
+pool4 = MaxPooling2D(pool_size=(2, 2))(conv4)
 
-conv5 = Conv2D(1024, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(pool4)
-conv5 = BatchNormalization() (conv5)
-conv5 = Conv2D(1024, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv5)
-conv5 = BatchNormalization() (conv5)
-drop5 = Dropout(0.5)(conv5)
+conv5 = Conv2D(512, (3, 3), padding='same', kernel_initializer='he_uniform')(pool4)
+conv5 = BatchNormalization()(conv5)
+conv5 = keras.layers.advanced_activations.ELU()(conv5)
+conv5 = Conv2D(512, (3, 3), padding='same', kernel_initializer='he_uniform')(conv5)
+conv5 = BatchNormalization()(conv5)
+conv5 = keras.layers.advanced_activations.ELU()(conv5)
 
-up6    = Conv2DTranspose(512, (2, 2), strides=(2, 2), activation = 'relu', padding='same')(drop5)
-merge6 = concatenate([drop4,up6], axis = 3)
-conv6  = Conv2D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge6)
-conv6  = BatchNormalization() (conv6)
-conv6  = Conv2D(512, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv6)
-conv6  = BatchNormalization() (conv6)
+up6 = concatenate([UpSampling2D(size=(2, 2))(conv5), conv4], axis=3)
+conv6 = Conv2D(256, (3, 3), padding='same', kernel_initializer='he_uniform')(up6)
+conv6 = BatchNormalization()(conv6)
+conv6 = keras.layers.advanced_activations.ELU()(conv6)
+conv6 = Conv2D(256, (3, 3), padding='same', kernel_initializer='he_uniform')(conv6)
+conv6 = BatchNormalization()(conv6)
+conv6 = keras.layers.advanced_activations.ELU()(conv6)
 
-up7    = Conv2DTranspose(256, (2, 2), strides=(2, 2), activation = 'relu', padding='same')(conv6)
-merge7 = concatenate([conv3,up7], axis = 3)
-conv7  = Conv2D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge7)
-conv7  = BatchNormalization() (conv7)
-conv7  = Conv2D(256, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv7)
-conv7  = BatchNormalization() (conv7)
+up7 = concatenate([UpSampling2D(size=(2, 2))(conv6), conv3], axis=3)
+conv7 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_uniform')(up7)
+conv7 = BatchNormalization()(conv7)
+conv7 = keras.layers.advanced_activations.ELU()(conv7)
+conv7 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_uniform')(conv7)
+conv7 = BatchNormalization()(conv7)
+conv7 = keras.layers.advanced_activations.ELU()(conv7)
 
-up8    = Conv2DTranspose(128, (2, 2), strides=(2, 2), activation = 'relu', padding='same')(conv7)
-merge8 = concatenate([conv2,up8], axis = 3)
-conv8  = Conv2D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge8)
-conv8  = BatchNormalization() (conv8)
-conv8  = Conv2D(128, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv8)
-conv8  = BatchNormalization() (conv8)
+up8 = concatenate([UpSampling2D(size=(2, 2))(conv7), conv2], axis=3)
+conv8 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_uniform')(up8)
+conv8 = BatchNormalization()(conv8)
+conv8 = keras.layers.advanced_activations.ELU()(conv8)
+conv8 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_uniform')(conv8)
+conv8 = BatchNormalization()(conv8)
+conv8 = keras.layers.advanced_activations.ELU()(conv8)
 
-up9    = Conv2DTranspose(64, (2, 2), strides=(2, 2), activation = 'relu', padding='same')(conv8)
-merge9 = concatenate([conv1,up9], axis = 3)
-conv9  = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge9)
-conv9  = BatchNormalization() (conv9)
-conv9  = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv9)
-conv9  = BatchNormalization() (conv9)
-conv9  = Conv2D(2, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv9)
-conv9  = BatchNormalization() (conv9)
+up9 = concatenate([UpSampling2D(size=(2, 2))(conv8), conv1], axis=3)
+conv9 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_uniform')(up9)
+conv9 = BatchNormalization()(conv9)
+conv9 = keras.layers.advanced_activations.ELU()(conv9)
+conv9 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_uniform')(conv9)
+#crop9 = Cropping2D(cropping=((16, 16), (16, 16)))(conv9)
+#conv9 = BatchNormalization()(crop9)
+conv9 = BatchNormalization() (conv9)
+conv9 = keras.layers.advanced_activations.ELU()(conv9)
+conv10 = Conv2D(1, (1, 1), activation='sigmoid')(conv9)
 
-outputs = Conv2D(1, 1, activation = 'sigmoid')(conv9)
-
-model = Model(inputs=[inputs], outputs=[outputs])
+model = Model(inputs=inputs, outputs=conv10)
 model.summary()
 ```
 
@@ -330,34 +370,37 @@ model.summary()
 
 ```python
 #tbc=TensorBoardColab()
-model_path = "./Models/fullyCNN_temp.h5"
+model_path = "./Models/{}_model.h5".format(MODEL_NAME)
 checkpointer = ModelCheckpoint(model_path,
                              monitor="val_loss",
                              mode="min",
                              save_best_only = True,
                              verbose=1)
-csv_logger = CSVLogger("./Logs/fullyCNN_log.csv", separator=',', append=False)
+csv_logger = CSVLogger("./Logs/{}_log.csv".format(MODEL_NAME), separator=',', append=False)
 lr_reducer = ReduceLROnPlateau(monitor='val_loss',
                                factor=0.1,
                                patience=6,
                                verbose=1,
                                epsilon=1e-4)
+early_stopper = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3, verbose=1)
 ```
 
 ## Model Training
 
 
 ```python
-opt = keras.optimizers.adam(LEARNING_RATE)
+#opt = keras.optimizers.adam(LEARNING_RATE)
+opt = keras.optimizers.Nadam(lr=1e-4)
 model.compile(
       optimizer=opt,
-      loss=jaccard_distance,
+      loss=combined_loss,
       metrics=[iou_coef])
 ```
 
 
 ```python
 history = model.fit_generator(train_generator,
+                              validation_data =(validation_image, validation_label),
                               steps_per_epoch=STEPS_PER_EPOCH,
                               epochs=EPOCHS,
                               callbacks = [checkpointer, csv_logger, lr_reducer])
@@ -366,7 +409,7 @@ history = model.fit_generator(train_generator,
 
 ```python
 # Show a training report
-training_info = pd.read_csv('./Logs/fullyCNN_log.csv', header=0)
+training_info = pd.read_csv('./Logs/{}_log.csv'.format(MODEL_NAME), header=0)
 
 acc1, = plt.plot(training_info['epoch'], training_info['iou_coef'])
 acc2, = plt.plot(training_info['epoch'], training_info['val_iou_coef'])
@@ -390,9 +433,9 @@ plt.show()
 
 
 ```python
-model = load_model("./Models/fullyCNN_temp.h5", custom_objects={'jaccard_distance': jaccard_distance, 'iou_coef': iou_coef})
+model = load_model("./Models/{}_model.h5".format(MODEL_NAME), custom_objects={'combined_loss': combined_loss, 'iou_coef': iou_coef})
 #model.evaluate(test_images, test_label)
-predictions = model.predict(test_image, verbose=1)
+predictions = model.predict(test_image, batch_size=4, verbose=1)
 ```
 
 
@@ -432,7 +475,8 @@ Multiply image by 255 and convert to unit8 before storing s.t. it gets read out 
 ```python
 predictions = np.squeeze(predictions*255)
 predictions = predictions.astype(np.uint8)
-result_dir = './Results/Prediction_Images/fullyCNN_baseline/'
+result_dir = './Results/Prediction_Images/{}/'.format(MODEL_NAME)
+os.makedirs(result_dir, exist_ok=True)
 
 #print(predictions.shape)
 #[print(predictions[i].shape) for i in range(n_test)]
@@ -440,6 +484,6 @@ result_dir = './Results/Prediction_Images/fullyCNN_baseline/'
 [imageio.imwrite(result_dir + files_test[i], predictions[i],) for i in range(n_test)]
 files_predictions = os.listdir(result_dir)
 files_predictions = [result_dir + files_predictions[i] for i in range(n_test)]
-masks_to_submission('./Results/Submissions/fullyCNN_baseline_19_April.csv', *files_predictions)
+masks_to_submission('./Results/Submissions/{}.csv'.format(MODEL_NAME), *files_predictions)
 print('Submission ready')
 ```
