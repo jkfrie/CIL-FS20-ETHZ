@@ -61,14 +61,14 @@ import natsort
 
 ```python
 # Name of the current model
-MODEL_NAME = 'fullyCNN_baseline_datagenerator'
+MODEL_NAME = 'fullyCNN_datagenerator'
 
 IMG_WIDTH = 608
 IMG_HEIGHT = 608
 EPOCHS = 100
-STEPS_PER_EPOCH = 2000
 LEARNING_RATE = 0.0001
 BATCH_SIZE = 8
+
 rnd_seed = 4
 np.random.seed(rnd_seed)
 ```
@@ -384,8 +384,8 @@ model.compile(
 # Labels are allready 1 or 0 now!
 history = model.fit_generator(train_generator,
                     validation_data =(validation_image, validation_label),
-                    steps_per_epoch=STEPS_PER_EPOCH,
                     epochs=EPOCHS,
+                    batch_size = BATCH_SIZE,
                     callbacks = [checkpointer, csv_logger, lr_reducer, early_stopper]
                     )
 ```
