@@ -21,6 +21,12 @@ except ImportError:
 
 
 ```python
+# Name of the current model
+MODEL_NAME = 'fullyCNN_baseline_more_data'
+```
+
+
+```python
 import matplotlib
 import numpy as np
 import pandas as pd
@@ -30,7 +36,7 @@ import os,sys
 from keras.models import Model, load_model
 from keras.layers import Input
 from keras.layers.core import Dropout, Lambda
-from keras.layers.convolutional import Conv2D, Conv2DTranspose, UpSampling2D, Cropping2D
+from keras.layers.convolutional import Conv2D, Conv2DTranspose
 from keras.layers.pooling import MaxPooling2D
 from keras.preprocessing.image import ImageDataGenerator
 from keras.layers.merge import concatenate
@@ -38,16 +44,13 @@ from keras import optimizers
 from keras.layers import BatchNormalization
 from tensorflow.keras.metrics import MeanIoU
 from keras import backend as K
-from keras.backend import binary_crossentropy
-import keras
-import random
 from sklearn.model_selection import train_test_split
-
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, CSVLogger
 from datetime import datetime
+import keras
+import random
 
 from mask_to_submission import masks_to_submission
-import util
 
 ## Install the following packages
 import imageio
@@ -60,9 +63,6 @@ import natsort
 
 
 ```python
-# Name of the current model
-MODEL_NAME = 'fullyCNN_datagenerator'
-
 IMG_WIDTH = 608
 IMG_HEIGHT = 608
 EPOCHS = 100
@@ -183,42 +183,123 @@ training_image, validation_image, training_label, validation_label = train_test_
 
 ## Augment Training Data
 
-We use the Keras Data Generator to augment our training data online while training. This is necessary because of memory consumption.
+Each training image can be rotated by 90 degrees and vertically an horizontally flipped. 
+By doing so we increase our training data by a factor of 16.
 
 
 ```python
-# We create an instance for the training images, training labels and test images
-data_gen_args = dict(rotation_range=360,
-                     width_shift_range=0.05,
-                     height_shift_range=0.05,
-                     zoom_range=0.05,
-                     shear_range=0.05,
-                     horizontal_flip=True,
-                     vertical_flip=True,
-                     fill_mode='wrap')
+# flip training images horizontally, vertically and on both axes to increase training data *4
+flipped_training_images = []
+flipped_training_labels = []
+for i in range(training_image.shape[0]):
+    cur_image = Image.fromarray(training_image[i])
+    cur_label = Image.fromarray(np.squeeze(training_label[i]))
+    flipped_training_images.append(np.asarray(cur_image.transpose(Image.FLIP_LEFT_RIGHT)))
+    flipped_training_labels.append(np.asarray(cur_label.transpose(Image.FLIP_LEFT_RIGHT)))
+    cur_image = cur_image.transpose(Image.FLIP_TOP_BOTTOM)
+    cur_label = cur_label.transpose(Image.FLIP_TOP_BOTTOM)
+    flipped_training_images.append(np.asarray(cur_image))
+    flipped_training_labels.append(np.asarray(cur_label))
+    flipped_training_images.append(np.asarray(cur_image.transpose(Image.FLIP_LEFT_RIGHT)))
+    flipped_training_labels.append(np.asarray(cur_label.transpose(Image.FLIP_LEFT_RIGHT)))
+    
+training_image = np.concatenate((training_image, np.array(flipped_training_images)), axis=0)
+training_label = np.concatenate((training_label, np.expand_dims(np.array(flipped_training_labels), -1)), axis=0)
+n = training_image.shape[0]
+print("Amount of training samples: " + str(n))
+print(training_image.shape)
+print(training_label.shape)
 
-image_datagen = ImageDataGenerator(**data_gen_args)
-mask_datagen = ImageDataGenerator(**data_gen_args)
+# Plot flipped images
+f = plt.figure(figsize = (15, 25))
 
-# Provide the same seed and keyword arguments to the fit and flow methods
-seed = 1
-image_generator = image_datagen.flow(
-    training_image,
-    batch_size=BATCH_SIZE,
-    #save_to_dir="training_images_augmented/images/",
-    #save_prefix="",
-    #save_format="png",
-    seed=seed)
-mask_generator = mask_datagen.flow(
-    training_label,
-    batch_size=BATCH_SIZE,
-    #save_to_dir="training_images_augmented/groundtruth/",
-    #save_prefix="",
-    #save_format="png",
-    seed=seed)
+f.add_subplot(1, 3, 1)
+plt.imshow(flipped_training_images[0])
+plt.title("flipped vertical axis")
+plt.axis('off')
 
-# Combine generators into one which yields image and masks
-train_generator = zip(image_generator, mask_generator)
+f.add_subplot(1, 3, 2)
+plt.imshow(flipped_training_images[1])
+plt.title("flipped horizontal axis")
+plt.axis('off')
+
+f.add_subplot(1, 3, 3)
+plt.imshow(flipped_training_images[2])
+plt.title("flipped both axis")
+plt.axis('off')
+
+f.add_subplot(2, 3, 1)
+plt.imshow(flipped_training_labels[0])
+plt.title("flipped vertical axis")
+plt.axis('off')
+
+f.add_subplot(2, 3, 2)
+plt.imshow(flipped_training_labels[1])
+plt.title("flipped horizontal axis")
+plt.axis('off')
+
+f.add_subplot(2, 3, 3)
+plt.imshow(flipped_training_labels[2])
+plt.title("flipped both axis")
+plt.axis('off')
+plt.show()
+```
+
+
+```python
+# rotate each training image by 90, 180 and 270 degrees to further increase training data *4
+rotated_training_images = []
+rotated_training_labels = []
+for i in range(n):
+    cur_image = Image.fromarray(training_image[i])
+    cur_label = Image.fromarray(np.squeeze(training_label[i]))
+    rotated_training_images.append(np.asarray(cur_image.rotate(90)))
+    rotated_training_labels.append(np.asarray(cur_label.rotate(90)))
+    #rotated_training_images.append(np.asarray(cur_image.rotate(180)))
+    #rotated_training_labels.append(np.asarray(cur_label.rotate(180)))
+    #rotated_training_images.append(np.asarray(cur_image.rotate(270)))
+    #rotated_training_labels.append(np.asarray(cur_label.rotate(270)))
+    
+training_image = np.concatenate((training_image, np.array(rotated_training_images)), axis=0)
+training_label = np.concatenate((training_label, np.expand_dims(np.array(rotated_training_labels), -1)), axis=0)
+n = training_image.shape[0]
+print("Amount of training samples: " + str(n))
+print(training_image.shape)
+print(training_label.shape)
+
+# Plot rotated images
+f = plt.figure(figsize = (15, 25))
+
+f.add_subplot(1, 3, 1)
+plt.imshow(rotated_training_images[0])
+plt.title("+90 degrees")
+plt.axis('off')
+
+f.add_subplot(1, 3, 2)
+plt.imshow(rotated_training_images[1])
+plt.title("+180 degrees")
+plt.axis('off')
+
+f.add_subplot(1, 3, 3)
+plt.imshow(rotated_training_images[2])
+plt.title("+270 degrees")
+plt.axis('off')
+
+f.add_subplot(2, 3, 1)
+plt.imshow(rotated_training_labels[0])
+plt.title("+90 degrees")
+plt.axis('off')
+
+f.add_subplot(2, 3, 2)
+plt.imshow(rotated_training_labels[1])
+plt.title("+180 degrees")
+plt.axis('off')
+
+f.add_subplot(2, 3, 3)
+plt.imshow(rotated_training_labels[2])
+plt.title("+270 degrees")
+plt.axis('off')
+plt.show()
 ```
 
 ## Loss Function and Accuracy Metric
@@ -382,7 +463,8 @@ model.compile(
 
 ```python
 # Labels are allready 1 or 0 now!
-history = model.fit_generator(train_generator,
+history = model.fit(training_image,
+                    training_label,
                     validation_data =(validation_image, validation_label),
                     epochs=EPOCHS,
                     batch_size = BATCH_SIZE,
