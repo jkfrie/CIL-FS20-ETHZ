@@ -179,6 +179,15 @@ print(training_label.dtype)
 # Get a validation set
 training_image, validation_image, training_label, validation_label = train_test_split(
     training_image, training_label, test_size=0.1, random_state=rnd_seed)
+
+# Rescale also validation images/labels and test images
+validation_image = validation_image/255.0
+print(validation_image.dtype)
+validation_label = validation_label/255.0
+print(validation_label.dtype)
+test_image = test_image/255.0
+test_image = test_image.astype(np.float32)
+print(test_image.dtype)
 ```
 
 ## Augment Training Data
@@ -188,11 +197,12 @@ We use the Keras Data Generator to augment our training data online while traini
 
 ```python
 # We create an instance for the training images, training labels and test images
-data_gen_args = dict(rotation_range=360,
-                     width_shift_range=0.05,
-                     height_shift_range=0.05,
-                     zoom_range=0.05,
-                     shear_range=0.05,
+data_gen_args = dict(rescale=1.0/255.0,
+                     #rotation_range=360,
+                     #width_shift_range=0.05,
+                     #height_shift_range=0.05,
+                     #zoom_range=0.05,
+                     #shear_range=0.05,
                      horizontal_flip=True,
                      vertical_flip=True,
                      fill_mode='wrap')
