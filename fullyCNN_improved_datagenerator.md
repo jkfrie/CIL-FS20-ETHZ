@@ -62,11 +62,10 @@ import natsort
 ```python
 # Name of the current model
 MODEL_NAME = 'fullyCNN_datagenerator'
-
 IMG_WIDTH = 608
 IMG_HEIGHT = 608
 EPOCHS = 100
-STEPS_PER_EPOCH = 2000
+STEPS_PER_EPOCH = 500
 LEARNING_RATE = 0.0001
 BATCH_SIZE = 2
 rnd_seed = 4
@@ -401,11 +400,11 @@ early_stopper = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3,
 
 
 ```python
-#opt = keras.optimizers.adam(LEARNING_RATE)
-opt = keras.optimizers.Nadam(lr=1e-4)
+opt = keras.optimizers.adam(LEARNING_RATE)
+#opt = keras.optimizers.Nadam(lr=LEARNING_RATE)
 model.compile(
       optimizer=opt,
-      loss=dice_coef,
+      loss=dice_coef_loss,
       metrics=[iou_coef])
 ```
 
