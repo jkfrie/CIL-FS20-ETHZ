@@ -3,7 +3,8 @@
 import numpy as np
 from PIL import Image
 import cv2
-
+from sklearn.metrics import f1_score
+from mask_to_submission import nparray_masks_to_patch_labels
 
 def add_flipped_images(images):
     """
@@ -123,3 +124,12 @@ def unpatchify(patches, width, height, img_width, img_height, stride):
                 cur_image[x:x + height, y:y + width] = patches[i + (x // height) * (img_height // height) + y // width]
                 images.append(cur_image)
     return np.array(images)
+
+def validate_kaggle_score(y_true, y_pred):
+    y_true = nparray_masks_to_patch_labels(y_true)
+    y_pred = nparray_masks_to_patch_labels(y_pred)
+    result = []
+    result = []
+    for k in range(y_true.shape[0]):
+        result.append(f1_score(y_true[k], y_pred[k], zero_division=1))
+    return result

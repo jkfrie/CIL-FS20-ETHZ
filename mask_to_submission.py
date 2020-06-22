@@ -39,6 +39,19 @@ def masks_to_submission(submission_filename, *image_filenames):
 def nparray_masks_to_submission(submission_filename, *image_filenames):
     return
 
+def nparray_masks_to_patch_labels(images):
+    patch_size = 16
+    patch_labels = []
+    for k in range(images.shape[0]):
+        patches = []
+        im = images[k]
+        for j in range(0, im.shape[1], patch_size):
+            for i in range(0, im.shape[0], patch_size):
+                patch = im[i:i + patch_size, j:j + patch_size]
+                patches.append(patch_to_label(patch))
+        patch_labels.append(patches)
+    return np.array(patch_labels)
+
 
 if __name__ == '__main__':
     submission_filename = 'dummy_submission.csv'

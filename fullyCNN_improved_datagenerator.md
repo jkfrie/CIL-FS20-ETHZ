@@ -182,9 +182,8 @@ training_image, validation_image, training_label, validation_label = train_test_
 
 # Rescale also validation images/labels and test images
 validation_image = validation_image/255.0
+validation_image = validation_image.astype(np.float32)
 print(validation_image.dtype)
-validation_label = validation_label/255.0
-print(validation_label.dtype)
 test_image = test_image/255.0
 test_image = test_image.astype(np.float32)
 print(test_image.dtype)
@@ -448,6 +447,16 @@ plt.show()
 ```
 
 ## Model Evaluation
+
+
+```python
+# Kaggle scores on validation images (mean score per image and overall mean score)
+model = load_model("./Models/{}_model.h5".format(MODEL_NAME), custom_objects={'dice_coef_loss': dice_coef_loss, 'iou_coef': iou_coef})
+y_pred = model.predict(validation_image, batch_size=4, verbose=1)
+scores = util.validate_kaggle_score(validation_label, y_pred)
+print(scores)
+print(sum(scores)/len(scores))
+```
 
 
 ```python
