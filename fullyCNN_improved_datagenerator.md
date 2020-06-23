@@ -62,7 +62,7 @@ import natsort
 
 ```python
 # Name of the current model
-MODEL_NAME = 'fullyCNN_datagenerator_fixed_more_data'
+MODEL_NAME = 'fullyCNN_datagenerator_fixed_more_data_lr_reducing'
 IMG_WIDTH = 608
 IMG_HEIGHT = 608
 EPOCHS = 100
@@ -399,10 +399,10 @@ checkpointer = ModelCheckpoint(model_path,
 csv_logger = CSVLogger("./Logs/{}_log.csv".format(MODEL_NAME), separator=',', append=False)
 lr_reducer = ReduceLROnPlateau(monitor='val_loss',
                                factor=0.1,
-                               patience=6,
+                               patience=3,
                                verbose=1,
                                epsilon=1e-4)
-early_stopper = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3, verbose=1)
+early_stopper = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, verbose=1)
 ```
 
 ## Model Training
@@ -435,7 +435,7 @@ acc1, = plt.plot(training_info['epoch'], training_info['iou_coef'])
 acc2, = plt.plot(training_info['epoch'], training_info['val_iou_coef'])
 plt.legend([acc1, acc2], ['Training IOU coef', 'Validation IOU coef'])
 plt.xlabel('Epoch')
-plt.ylim(0,0.1)
+plt.ylim(0,1)
 plt.grid(True)
 plt.show()
 
