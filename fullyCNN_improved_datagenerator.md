@@ -39,9 +39,9 @@ from keras.layers import BatchNormalization
 from tensorflow.keras.metrics import MeanIoU
 from keras import backend as K
 from keras.backend import binary_crossentropy
-import tensorflow as tf
 import keras
 import random
+import tensorflow as tf
 from sklearn.model_selection import train_test_split
 
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, CSVLogger
@@ -65,8 +65,8 @@ import natsort
 MODEL_NAME = 'fullyCNN_datagenerator'
 IMG_WIDTH = 608
 IMG_HEIGHT = 608
-EPOCHS = 1
-STEPS_PER_EPOCH = 1
+EPOCHS = 100
+STEPS_PER_EPOCH = 500
 LEARNING_RATE = 0.0001
 BATCH_SIZE = 2
 rnd_seed = 4
@@ -427,7 +427,7 @@ acc1, = plt.plot(training_info['epoch'], training_info['iou_coef'])
 acc2, = plt.plot(training_info['epoch'], training_info['val_iou_coef'])
 plt.legend([acc1, acc2], ['Training IOU coef', 'Validation IOU coef'])
 plt.xlabel('Epoch')
-plt.ylim(0,1)
+plt.ylim(0,0.1)
 plt.grid(True)
 plt.show()
 
@@ -435,7 +435,7 @@ loss1, = plt.plot(training_info['epoch'], training_info['loss'])
 loss2, = plt.plot(training_info['epoch'], training_info['val_loss'])
 plt.legend([acc1, acc2], ['Training Loss', 'Validation Loss'])                            
 plt.xlabel('Epoch')
-plt.ylim(0,1)
+plt.ylim(0,0.1)
 plt.grid(True)
 
 plt.show()
