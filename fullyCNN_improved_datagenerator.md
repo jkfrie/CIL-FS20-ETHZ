@@ -39,6 +39,7 @@ from keras.layers import BatchNormalization
 from tensorflow.keras.metrics import MeanIoU
 from keras import backend as K
 from keras.backend import binary_crossentropy
+import tensorflow as tf
 import keras
 import random
 from sklearn.model_selection import train_test_split
@@ -64,8 +65,8 @@ import natsort
 MODEL_NAME = 'fullyCNN_datagenerator'
 IMG_WIDTH = 608
 IMG_HEIGHT = 608
-EPOCHS = 100
-STEPS_PER_EPOCH = 500
+EPOCHS = 1
+STEPS_PER_EPOCH = 1
 LEARNING_RATE = 0.0001
 BATCH_SIZE = 2
 rnd_seed = 4
@@ -170,7 +171,7 @@ print(training_label.shape)
 # Make sure label masks only have values 1 or zero
 #thresh_val = 0.5
 #training_label = (training_label > thresh_val).astype(np.uint8)
-training_label = training_label/255
+#training_label = training_label/255
 training_label = training_label.astype(np.float32)
 #print(np.unique(training_label, return_counts=True, axis=None))
 print(training_label.dtype)
@@ -203,7 +204,7 @@ data_gen_args = dict(rescale=1.0/255.0,
                      #shear_range=0.05,
                      horizontal_flip=True,
                      vertical_flip=True,
-                     fill_mode='wrap')
+                     fill_mode='reflect')
 
 image_datagen = ImageDataGenerator(**data_gen_args)
 mask_datagen = ImageDataGenerator(**data_gen_args)
