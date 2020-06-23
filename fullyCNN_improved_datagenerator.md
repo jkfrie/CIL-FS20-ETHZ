@@ -62,13 +62,13 @@ import natsort
 
 ```python
 # Name of the current model
-MODEL_NAME = 'fullyCNN_datagenerator'
+MODEL_NAME = 'fullyCNN_datagenerator_fixed_more_data'
 IMG_WIDTH = 608
 IMG_HEIGHT = 608
 EPOCHS = 100
 STEPS_PER_EPOCH = 500
 LEARNING_RATE = 0.0001
-BATCH_SIZE = 2
+BATCH_SIZE = 8
 rnd_seed = 4
 np.random.seed(rnd_seed)
 ```
@@ -164,6 +164,12 @@ training_label = np.expand_dims(np.array(training_label_padded_list), -1)
 test_image = np.array(test_image_list)
 print(training_image.shape)
 print(training_label.shape)
+
+# Delete unused variables, hopefully this frees up some RAM
+del training_image_list
+del training_label_list
+del training_image_padded_list
+del training_label_padded_list
 ```
 
 
@@ -180,9 +186,11 @@ print(training_label.dtype)
 training_image, validation_image, training_label, validation_label = train_test_split(
     training_image, training_label, test_size=0.1, random_state=rnd_seed)
 
-# Rescale also validation images/labels and test images
+# Rescale validation images/labels and test images because generator will do the same with training data
 validation_image = validation_image/255.0
+validation_label = validation_label/255.0
 validation_image = validation_image.astype(np.float32)
+validation_label = validation_label.astype(np.float32)
 print(validation_image.dtype)
 test_image = test_image/255.0
 test_image = test_image.astype(np.float32)
@@ -415,7 +423,7 @@ history = model.fit_generator(train_generator,
                               validation_data =(validation_image, validation_label),
                               steps_per_epoch=STEPS_PER_EPOCH,
                               epochs=EPOCHS,
-                              callbacks = [checkpointer, csv_logger, lr_reducer])
+                              callbacks = [checkpointer, csv_logger, lr_reducer, early_stopper])
 ```
 
 
