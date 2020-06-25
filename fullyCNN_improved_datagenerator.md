@@ -41,6 +41,7 @@ from keras import backend as K
 from keras.backend import binary_crossentropy
 import keras
 import random
+import tensorflow as tf
 from sklearn.model_selection import train_test_split
 
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, CSVLogger
@@ -61,14 +62,13 @@ import natsort
 
 ```python
 # Name of the current model
-MODEL_NAME = 'fullyCNN_datagenerator'
-
+MODEL_NAME = 'fullyCNN_datagenerator_fixed_more_data'
 IMG_WIDTH = 608
 IMG_HEIGHT = 608
 EPOCHS = 100
-STEPS_PER_EPOCH = 2000
+STEPS_PER_EPOCH = 500
 LEARNING_RATE = 0.0001
-BATCH_SIZE = 1
+BATCH_SIZE = 8
 rnd_seed = 4
 np.random.seed(rnd_seed)
 ```
@@ -96,8 +96,8 @@ training_image_list = []
 training_label_list = []
 for i in range(n):
     print("Loading training image {:04d}\r".format(i)),
-    training_image_list.append(imageio.imread(training_image_dir + files_image[i]))
-    training_label_list.append(imageio.imread(training_label_dir + files_label[i]))
+    training_image_list.append(imageio.imread(training_image_dir + files_image[i], pilmode="RGB"))
+    training_label_list.append(imageio.imread(training_label_dir + files_label[i], pilmode="L"))
 
 # Load list of numpy arrays of test images
 print("Loading " + str(n_test) + " test images")
@@ -117,8 +117,16 @@ for that I use mirror padding for now.
 
 ```python
 # Mirror padd all training images to get same size as test images
-training_image_padded_list = [cv2.copyMakeBorder(training_image_list[i],104,104,104,104,cv2.BORDER_REFLECT) for i in range(n)]
-training_label_padded_list = [cv2.copyMakeBorder(training_label_list[i],104,104,104,104,cv2.BORDER_REFLECT) for i in range(n)]
+training_image_padded_list = []
+training_label_padded_list = []
+for i in range(n):
+    training_image = training_image_list[i]
+    training_label = training_label_list[i]
+    height, width, _ = training_image.shape
+    pad_y = int((IMG_HEIGHT - height) / 2)
+    pad_x = int((IMG_WIDTH - height) / 2)
+    training_image_padded_list.append(cv2.copyMakeBorder(training_image,pad_y,pad_y,pad_x,pad_x,cv2.BORDER_REFLECT))
+    training_label_padded_list.append(cv2.copyMakeBorder(training_label,pad_y,pad_y,pad_x,pad_x,cv2.BORDER_REFLECT))
 
 # Plot random Sample of images
 index = random.randint(0, n-1)
@@ -156,6 +164,12 @@ training_label = np.expand_dims(np.array(training_label_padded_list), -1)
 test_image = np.array(test_image_list)
 print(training_image.shape)
 print(training_label.shape)
+
+# Delete unused variables, hopefully this frees up some RAM
+del training_image_list
+del training_label_list
+del training_image_padded_list
+del training_label_padded_list
 ```
 
 
@@ -163,7 +177,7 @@ print(training_label.shape)
 # Make sure label masks only have values 1 or zero
 #thresh_val = 0.5
 #training_label = (training_label > thresh_val).astype(np.uint8)
-training_label = training_label/255
+#training_label = training_label/255
 training_label = training_label.astype(np.float32)
 #print(np.unique(training_label, return_counts=True, axis=None))
 print(training_label.dtype)
@@ -171,6 +185,16 @@ print(training_label.dtype)
 # Get a validation set
 training_image, validation_image, training_label, validation_label = train_test_split(
     training_image, training_label, test_size=0.1, random_state=rnd_seed)
+
+# Rescale validation images/labels and test images because generator will do the same with training data
+validation_image = validation_image/255.0
+validation_label = validation_label/255.0
+validation_image = validation_image.astype(np.float32)
+validation_label = validation_label.astype(np.float32)
+print(validation_image.dtype)
+test_image = test_image/255.0
+test_image = test_image.astype(np.float32)
+print(test_image.dtype)
 ```
 
 ## Augment Training Data
@@ -180,14 +204,15 @@ We use the Keras Data Generator to augment our training data online while traini
 
 ```python
 # We create an instance for the training images, training labels and test images
-data_gen_args = dict(rotation_range=360,
-                     width_shift_range=0.05,
-                     height_shift_range=0.05,
-                     zoom_range=0.05,
-                     shear_range=0.05,
+data_gen_args = dict(rescale=1.0/255.0,
+                     #rotation_range=360,
+                     #width_shift_range=0.05,
+                     #height_shift_range=0.05,
+                     #zoom_range=0.05,
+                     #shear_range=0.05,
                      horizontal_flip=True,
                      vertical_flip=True,
-                     fill_mode='wrap')
+                     fill_mode='reflect')
 
 image_datagen = ImageDataGenerator(**data_gen_args)
 mask_datagen = ImageDataGenerator(**data_gen_args)
@@ -287,81 +312,76 @@ def combined_loss(y_true, y_pred):
 ```python
 inputs = Input((IMG_HEIGHT, IMG_WIDTH, 3))
 
-conv1 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_uniform')(inputs)
-conv1 = BatchNormalization()(conv1)
-conv1 = keras.layers.advanced_activations.ELU()(conv1)
-conv1 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_uniform')(conv1)
-conv1 = BatchNormalization()(conv1)
-conv1 = keras.layers.advanced_activations.ELU()(conv1)
-pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
+conv1 = Conv2D(16, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same') (inputs)
+conv1 = BatchNormalization() (conv1)
+conv1 = Dropout(0.1) (conv1)
+conv1 = Conv2D(16, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same') (conv1)
+conv1 = BatchNormalization() (conv1)
+pooling1 = MaxPooling2D((2, 2)) (conv1)
 
-conv2 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_uniform')(pool1)
-conv2 = BatchNormalization()(conv2)
-conv2 = keras.layers.advanced_activations.ELU()(conv2)
-conv2 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_uniform')(conv2)
-conv2 = BatchNormalization()(conv2)
-conv2 = keras.layers.advanced_activations.ELU()(conv2)
-pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
+conv2 = Conv2D(32, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same') (pooling1)
+conv2 = BatchNormalization() (conv2)
+conv2 = Dropout(0.1) (conv2)
+conv2 = Conv2D(32, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same') (conv2)
+conv2 = BatchNormalization() (conv2)
+pooling2 = MaxPooling2D((2, 2)) (conv2)
 
-conv3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_uniform')(pool2)
-conv3 = BatchNormalization()(conv3)
-conv3 = keras.layers.advanced_activations.ELU()(conv3)
-conv3 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_uniform')(conv3)
-conv3 = BatchNormalization()(conv3)
-conv3 = keras.layers.advanced_activations.ELU()(conv3)
-pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
+conv3 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same') (pooling2)
+conv3 = BatchNormalization() (conv3)
+conv3 = Dropout(0.2) (conv3)
+conv3 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same') (conv3)
+conv3 = BatchNormalization() (conv3)
+pooling3 = MaxPooling2D((2, 2)) (conv3)
 
-conv4 = Conv2D(256, (3, 3), padding='same', kernel_initializer='he_uniform')(pool3)
-conv4 = BatchNormalization()(conv4)
-conv4 = keras.layers.advanced_activations.ELU()(conv4)
-conv4 = Conv2D(256, (3, 3), padding='same', kernel_initializer='he_uniform')(conv4)
-conv4 = BatchNormalization()(conv4)
-conv4 = keras.layers.advanced_activations.ELU()(conv4)
-pool4 = MaxPooling2D(pool_size=(2, 2))(conv4)
+conv4 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same') (pooling3)
+conv4 = BatchNormalization() (conv4)
+conv4 = Dropout(0.2) (conv4)
+conv4 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same') (conv4)
+conv4 = BatchNormalization() (conv4)
+pooling4 = MaxPooling2D(pool_size=(2, 2)) (conv4)
 
-conv5 = Conv2D(512, (3, 3), padding='same', kernel_initializer='he_uniform')(pool4)
-conv5 = BatchNormalization()(conv5)
-conv5 = keras.layers.advanced_activations.ELU()(conv5)
-conv5 = Conv2D(512, (3, 3), padding='same', kernel_initializer='he_uniform')(conv5)
-conv5 = BatchNormalization()(conv5)
-conv5 = keras.layers.advanced_activations.ELU()(conv5)
+conv5 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same') (pooling4)
+conv5 = BatchNormalization() (conv5)
+conv5 = Dropout(0.3) (conv5)
+conv5 = Conv2D(256, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same') (conv5)
+conv5 = BatchNormalization() (conv5)
 
-up6 = concatenate([UpSampling2D(size=(2, 2))(conv5), conv4], axis=3)
-conv6 = Conv2D(256, (3, 3), padding='same', kernel_initializer='he_uniform')(up6)
-conv6 = BatchNormalization()(conv6)
-conv6 = keras.layers.advanced_activations.ELU()(conv6)
-conv6 = Conv2D(256, (3, 3), padding='same', kernel_initializer='he_uniform')(conv6)
-conv6 = BatchNormalization()(conv6)
-conv6 = keras.layers.advanced_activations.ELU()(conv6)
 
-up7 = concatenate([UpSampling2D(size=(2, 2))(conv6), conv3], axis=3)
-conv7 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_uniform')(up7)
-conv7 = BatchNormalization()(conv7)
-conv7 = keras.layers.advanced_activations.ELU()(conv7)
-conv7 = Conv2D(128, (3, 3), padding='same', kernel_initializer='he_uniform')(conv7)
-conv7 = BatchNormalization()(conv7)
-conv7 = keras.layers.advanced_activations.ELU()(conv7)
+upsample6 = Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same') (conv5)
+upsample6 = concatenate([upsample6, conv4])
+conv6 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same') (upsample6)
+conv6 = BatchNormalization() (conv6)
+conv6 = Dropout(0.2) (conv6)
+conv6 = Conv2D(128, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same') (conv6)
+conv6 = BatchNormalization() (conv6)
 
-up8 = concatenate([UpSampling2D(size=(2, 2))(conv7), conv2], axis=3)
-conv8 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_uniform')(up8)
-conv8 = BatchNormalization()(conv8)
-conv8 = keras.layers.advanced_activations.ELU()(conv8)
-conv8 = Conv2D(64, (3, 3), padding='same', kernel_initializer='he_uniform')(conv8)
-conv8 = BatchNormalization()(conv8)
-conv8 = keras.layers.advanced_activations.ELU()(conv8)
+upsample7 = Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='same') (conv6)
+upsample7 = concatenate([upsample7, conv3])
+conv7 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same') (upsample7)
+conv7 = BatchNormalization() (conv7)
+conv7 = Dropout(0.2) (conv7)
+conv7 = Conv2D(64, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same') (conv7)
+conv7 = BatchNormalization() (conv7)
 
-up9 = concatenate([UpSampling2D(size=(2, 2))(conv8), conv1], axis=3)
-conv9 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_uniform')(up9)
-conv9 = BatchNormalization()(conv9)
-conv9 = keras.layers.advanced_activations.ELU()(conv9)
-conv9 = Conv2D(32, (3, 3), padding='same', kernel_initializer='he_uniform')(conv9)
-#crop9 = Cropping2D(cropping=((16, 16), (16, 16)))(conv9)
-#conv9 = BatchNormalization()(crop9)
+upsample8 = Conv2DTranspose(32, (2, 2), strides=(2, 2), padding='same') (conv7)
+upsample8 = concatenate([upsample8, conv2])
+conv8 = Conv2D(32, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same') (upsample8)
+conv8 = BatchNormalization() (conv8)
+conv8 = Dropout(0.1) (conv8)
+conv8 = Conv2D(32, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same') (conv8)
+conv8 = BatchNormalization() (conv8)
+
+upsample9 = Conv2DTranspose(16, (2, 2), strides=(2, 2), padding='same') (conv8)
+upsample9 = concatenate([upsample9, conv1], axis=3)
+conv9 = Conv2D(16, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same') (upsample9)
 conv9 = BatchNormalization() (conv9)
-conv9 = keras.layers.advanced_activations.ELU()(conv9)
-conv10 = Conv2D(1, (1, 1), activation='sigmoid')(conv9)
+conv9 = Dropout(0.1) (conv9)
+conv9 = Conv2D(16, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same') (conv9)
+conv9 = BatchNormalization() (conv9)
 
-model = Model(inputs=inputs, outputs=conv10)
+outputs = Conv2D(1, (1, 1), activation='sigmoid') (conv9)
+
+model = Model(inputs=[inputs], outputs=[outputs])
 model.summary()
 ```
 
@@ -389,11 +409,11 @@ early_stopper = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3,
 
 
 ```python
-#opt = keras.optimizers.adam(LEARNING_RATE)
-opt = keras.optimizers.Nadam(lr=1e-4)
+opt = keras.optimizers.adam(LEARNING_RATE)
+#opt = keras.optimizers.Nadam(lr=LEARNING_RATE)
 model.compile(
       optimizer=opt,
-      loss=combined_loss,
+      loss=dice_coef_loss,
       metrics=[iou_coef])
 ```
 
@@ -403,7 +423,7 @@ history = model.fit_generator(train_generator,
                               validation_data =(validation_image, validation_label),
                               steps_per_epoch=STEPS_PER_EPOCH,
                               epochs=EPOCHS,
-                              callbacks = [checkpointer, csv_logger, lr_reducer])
+                              callbacks = [checkpointer, csv_logger, lr_reducer, early_stopper])
 ```
 
 
@@ -415,7 +435,7 @@ acc1, = plt.plot(training_info['epoch'], training_info['iou_coef'])
 acc2, = plt.plot(training_info['epoch'], training_info['val_iou_coef'])
 plt.legend([acc1, acc2], ['Training IOU coef', 'Validation IOU coef'])
 plt.xlabel('Epoch')
-plt.ylim(0,1)
+plt.ylim(0,0.1)
 plt.grid(True)
 plt.show()
 
@@ -423,7 +443,7 @@ loss1, = plt.plot(training_info['epoch'], training_info['loss'])
 loss2, = plt.plot(training_info['epoch'], training_info['val_loss'])
 plt.legend([acc1, acc2], ['Training Loss', 'Validation Loss'])                            
 plt.xlabel('Epoch')
-plt.ylim(0,1)
+plt.ylim(0,0.1)
 plt.grid(True)
 
 plt.show()
@@ -433,7 +453,17 @@ plt.show()
 
 
 ```python
-model = load_model("./Models/{}_model.h5".format(MODEL_NAME), custom_objects={'combined_loss': combined_loss, 'iou_coef': iou_coef})
+# Kaggle scores on validation images (mean score per image and overall mean score)
+model = load_model("./Models/{}_model.h5".format(MODEL_NAME), custom_objects={'dice_coef_loss': dice_coef_loss, 'iou_coef': iou_coef})
+y_pred = model.predict(validation_image, batch_size=4, verbose=1)
+scores = util.validate_kaggle_score(validation_label, y_pred)
+print(scores)
+print(sum(scores)/len(scores))
+```
+
+
+```python
+model = load_model("./Models/{}_model.h5".format(MODEL_NAME), custom_objects={'dice_coef_loss': dice_coef_loss, 'iou_coef': iou_coef})
 #model.evaluate(test_images, test_label)
 predictions = model.predict(test_image, batch_size=4, verbose=1)
 ```

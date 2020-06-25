@@ -161,6 +161,8 @@ plt.show()
 # Convert image lists to numpy arrays for further processing
 training_image = np.array(training_image_padded_list)
 training_label = np.expand_dims(np.array(training_label_padded_list), -1)
+del training_image_padded_list
+del training_label_padded_list
 test_image = np.array(test_image_list)
 print(training_image.shape)
 print(training_label.shape)
@@ -179,127 +181,6 @@ print(training_label.dtype)
 # Get a validation set
 training_image, validation_image, training_label, validation_label = train_test_split(
     training_image, training_label, test_size=0.1, random_state=rnd_seed)
-```
-
-## Augment Training Data
-
-Each training image can be rotated by 90 degrees and vertically an horizontally flipped. 
-By doing so we increase our training data by a factor of 16.
-
-
-```python
-# flip training images horizontally, vertically and on both axes to increase training data *4
-flipped_training_images = []
-flipped_training_labels = []
-for i in range(training_image.shape[0]):
-    cur_image = Image.fromarray(training_image[i])
-    cur_label = Image.fromarray(np.squeeze(training_label[i]))
-    flipped_training_images.append(np.asarray(cur_image.transpose(Image.FLIP_LEFT_RIGHT)))
-    flipped_training_labels.append(np.asarray(cur_label.transpose(Image.FLIP_LEFT_RIGHT)))
-    cur_image = cur_image.transpose(Image.FLIP_TOP_BOTTOM)
-    cur_label = cur_label.transpose(Image.FLIP_TOP_BOTTOM)
-    flipped_training_images.append(np.asarray(cur_image))
-    flipped_training_labels.append(np.asarray(cur_label))
-    flipped_training_images.append(np.asarray(cur_image.transpose(Image.FLIP_LEFT_RIGHT)))
-    flipped_training_labels.append(np.asarray(cur_label.transpose(Image.FLIP_LEFT_RIGHT)))
-    
-training_image = np.concatenate((training_image, np.array(flipped_training_images)), axis=0)
-training_label = np.concatenate((training_label, np.expand_dims(np.array(flipped_training_labels), -1)), axis=0)
-n = training_image.shape[0]
-print("Amount of training samples: " + str(n))
-print(training_image.shape)
-print(training_label.shape)
-
-# Plot flipped images
-f = plt.figure(figsize = (15, 25))
-
-f.add_subplot(1, 3, 1)
-plt.imshow(flipped_training_images[0])
-plt.title("flipped vertical axis")
-plt.axis('off')
-
-f.add_subplot(1, 3, 2)
-plt.imshow(flipped_training_images[1])
-plt.title("flipped horizontal axis")
-plt.axis('off')
-
-f.add_subplot(1, 3, 3)
-plt.imshow(flipped_training_images[2])
-plt.title("flipped both axis")
-plt.axis('off')
-
-f.add_subplot(2, 3, 1)
-plt.imshow(flipped_training_labels[0])
-plt.title("flipped vertical axis")
-plt.axis('off')
-
-f.add_subplot(2, 3, 2)
-plt.imshow(flipped_training_labels[1])
-plt.title("flipped horizontal axis")
-plt.axis('off')
-
-f.add_subplot(2, 3, 3)
-plt.imshow(flipped_training_labels[2])
-plt.title("flipped both axis")
-plt.axis('off')
-plt.show()
-```
-
-
-```python
-# rotate each training image by 90, 180 and 270 degrees to further increase training data *4
-rotated_training_images = []
-rotated_training_labels = []
-for i in range(n):
-    cur_image = Image.fromarray(training_image[i])
-    cur_label = Image.fromarray(np.squeeze(training_label[i]))
-    rotated_training_images.append(np.asarray(cur_image.rotate(90)))
-    rotated_training_labels.append(np.asarray(cur_label.rotate(90)))
-    #rotated_training_images.append(np.asarray(cur_image.rotate(180)))
-    #rotated_training_labels.append(np.asarray(cur_label.rotate(180)))
-    #rotated_training_images.append(np.asarray(cur_image.rotate(270)))
-    #rotated_training_labels.append(np.asarray(cur_label.rotate(270)))
-    
-training_image = np.concatenate((training_image, np.array(rotated_training_images)), axis=0)
-training_label = np.concatenate((training_label, np.expand_dims(np.array(rotated_training_labels), -1)), axis=0)
-n = training_image.shape[0]
-print("Amount of training samples: " + str(n))
-print(training_image.shape)
-print(training_label.shape)
-
-# Plot rotated images
-f = plt.figure(figsize = (15, 25))
-
-f.add_subplot(1, 3, 1)
-plt.imshow(rotated_training_images[0])
-plt.title("+90 degrees")
-plt.axis('off')
-
-f.add_subplot(1, 3, 2)
-plt.imshow(rotated_training_images[1])
-plt.title("+180 degrees")
-plt.axis('off')
-
-f.add_subplot(1, 3, 3)
-plt.imshow(rotated_training_images[2])
-plt.title("+270 degrees")
-plt.axis('off')
-
-f.add_subplot(2, 3, 1)
-plt.imshow(rotated_training_labels[0])
-plt.title("+90 degrees")
-plt.axis('off')
-
-f.add_subplot(2, 3, 2)
-plt.imshow(rotated_training_labels[1])
-plt.title("+180 degrees")
-plt.axis('off')
-
-f.add_subplot(2, 3, 3)
-plt.imshow(rotated_training_labels[2])
-plt.title("+270 degrees")
-plt.axis('off')
-plt.show()
 ```
 
 ## Loss Function and Accuracy Metric
