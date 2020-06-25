@@ -74,7 +74,7 @@ def show_contours(img):
     show_image('thresh', thresh, True)
 
 
-# get rid of all contours that are larger than threshold (in pixels)
+# get rid of all contours that are smaller than threshold (in pixels)
 def tidy_contours(img, threshold):
     thresh = thresholding(img)
     # show_image('before', thresh, False)
