@@ -17,6 +17,11 @@ def thresholding(img):
     return th3
 
 
+def thresholding_otsu(img):
+    ret2, th2 = cv.threshold(img, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+    return th2
+
+
 # different modes of thresholding try out
 def thresholding_test(img, plot_images):
     # global thresholding
