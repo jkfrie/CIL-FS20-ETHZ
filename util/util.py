@@ -3,8 +3,24 @@
 import numpy as np
 from PIL import Image
 import cv2
+import imageio
+from scipy import ndimage
 from sklearn.metrics import f1_score
-from mask_to_submission import nparray_masks_to_patch_labels
+from util.mask_to_submission import nparray_masks_to_patch_labels
+
+def load_images(path, filenames, pilmode):
+    """
+    Load all images with respective paths into an np.array
+    :param path: path dir holding the images
+    :param filenames: list of names of the images
+    :param pilmode: pilmode from imageio.imread ("RGB" or "L")
+    :return: np array of loaded images
+    """
+    images = []
+    n = len(filenames)
+    print("Loading " + str(n) + " images")
+    images = [imageio.imread(path + filenames[i], pilmode=pilmode) for i in range(n)]
+    return np.array(images)
 
 def add_flipped_images(images):
     """
@@ -49,9 +65,13 @@ def add_rotated_images(images):
 
     for i in range(images.shape[0]):
         cur_image = Image.fromarray(images[i])
+        rotated_images.append(ndimage.rotate(cur_image, 45, reshape=False, mode='reflect'))
         rotated_images.append(np.asarray(cur_image.rotate(90)))
+        rotated_images.append(ndimage.rotate(cur_image, 135, reshape=False, mode='reflect'))
         rotated_images.append(np.asarray(cur_image.rotate(180)))
+        rotated_images.append(ndimage.rotate(cur_image, 225, reshape=False, mode='reflect'))
         rotated_images.append(np.asarray(cur_image.rotate(270)))
+        rotated_images.append(ndimage.rotate(cur_image, 315, reshape=False, mode='reflect'))
 
     rotated_images = np.concatenate((images, np.array(rotated_images)), axis=0)
 
@@ -61,16 +81,24 @@ def add_rotated_images(images):
     return rotated_images
 
 
-def padd_images(images, padding, padding_type=cv2.BORDER_REFLECT):
+def padd_images(images, width, height, padding_type=cv2.BORDER_REFLECT):
     """
     Padd padding on each side of the image
     :param images: np array of images
-    :param padding: number of pixels to padd on each side
+    :param width: Up to which width to pad
+    :param height: Up to which height to pad
     :param padding_type: type of padding from cv2
     :return: np array of padded images
     """
-    n = images.shape[0]
-    return np.array([cv2.copyMakeBorder(images[i], padding, padding, padding, padding, padding_type) for i in range(n)])
+    images = images.tolist()
+    for i in range(len(images)):
+      cur_image = np.array(images[i])
+      imheight = cur_image.shape[0]
+      imwidth = cur_image.shape[1]
+      pad_y = int((height - imheight) / 2)
+      pad_x = int((width - imwidth) / 2)
+      images[i] = cv2.copyMakeBorder(cur_image, pad_y, pad_y, pad_x, pad_x, padding_type)
+    return np.array(images)
 
 
 def crop_images(images, padding):
