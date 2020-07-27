@@ -41,8 +41,8 @@ import logging
 MODEL_NAME = 'fullyCNN_datagenerator_improved_unet_dropout'
 IMG_WIDTH = 608
 IMG_HEIGHT = 608
-EPOCHS = 1
-STEPS_PER_EPOCH = 2
+EPOCHS = 150
+STEPS_PER_EPOCH = 2500
 LEARNING_RATE = 0.0001
 BATCH_SIZE = 2
 VALIDATION_SPLIT = 0.1
@@ -122,7 +122,7 @@ print(training_label_extra.shape)
 
 # Create a validation set
 training_image_original, validation_image, training_label_original, validation_label = train_test_split(
-    training_image_original, training_label_original, test_size=0.5, random_state=rnd_seed)
+    training_image_original, training_label_original, test_size=VALIDATION_SPLIT, random_state=rnd_seed)
 
 print(training_image_original.shape)
 print(training_label_original.shape)
