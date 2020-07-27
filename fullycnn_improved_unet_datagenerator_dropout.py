@@ -42,9 +42,9 @@ MODEL_NAME = 'fullyCNN_datagenerator_improved_unet_dropout'
 IMG_WIDTH = 608
 IMG_HEIGHT = 608
 EPOCHS = 150
-STEPS_PER_EPOCH = 2500
+STEPS_PER_EPOCH = 150
 LEARNING_RATE = 0.0001
-BATCH_SIZE = 2
+BATCH_SIZE = 4
 VALIDATION_SPLIT = 0.1
 rnd_seed = 4
 np.random.seed(rnd_seed)
