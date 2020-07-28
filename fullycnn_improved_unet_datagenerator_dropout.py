@@ -41,10 +41,10 @@ import logging
 MODEL_NAME = 'fullyCNN_datagenerator_improved_unet_dropout'
 IMG_WIDTH = 608
 IMG_HEIGHT = 608
-EPOCHS = 150
-STEPS_PER_EPOCH = 1500
+EPOCHS = 200
+STEPS_PER_EPOCH = 750
 LEARNING_RATE = 0.0001
-BATCH_SIZE = 4
+BATCH_SIZE = 8
 VALIDATION_SPLIT = 0.1
 rnd_seed = 4
 np.random.seed(rnd_seed)
@@ -63,13 +63,13 @@ test_image_dir = "test_images/normal/"
 # images and test images.
 files_image = os.listdir(training_image_dir)
 files_image = natsort.natsorted(files_image)
-files_image_original = files_image[-5:]
-files_image_extra = files_image[:10]
+files_image_original = files_image[-100:]
+files_image_extra = files_image[:-100]
 
 files_label = os.listdir(training_label_dir)
 files_label = natsort.natsorted(files_label)
-files_label_original = files_label[-5:]
-files_label_extra = files_label[:10]
+files_label_original = files_label[-100:]
+files_label_extra = files_label[:-100]
 
 files_test = os.listdir(test_image_dir)
 files_test = natsort.natsorted(files_test)
@@ -154,12 +154,11 @@ print(validation_image.shape)
 print(validation_label.shape)
 
 # Rescale validation images/labels and test images because generator will do the same with training data
-validation_image = validation_image.astype(np.float32)
-validation_label = validation_label.astype(np.float32)
-validation_image = validation_image/255.0
-validation_label = validation_label/255.0
-test_image = test_image.astype(np.float32)
-test_image = test_image/255.0
+training_image = training_image.astype(np.float32)/255.0
+training_label = training_label.astype(np.float32)/255.0
+validation_image = validation_image.astype(np.float32)/255.0
+validation_label = validation_label.astype(np.float32)/255.0
+test_image = test_image.astype(np.float32)/255.0
 print(test_image.dtype)
 logging.info('Finished Preprocessing!')
 
@@ -167,7 +166,7 @@ logging.info('Finished Preprocessing!')
 ## Keras Data Generator
 We use the Keras Data Generator to augment our training data online while training. This is necessary because of memory consumption.
 """
-
+"""
 # We create an instance for the training images, training labels and test images
 data_gen_args = dict(rescale=1.0/255.0,
                      #width_shift_range=0.1,
@@ -194,7 +193,7 @@ mask_generator = mask_datagen.flow(
 
 # Combine generators into one which yields image and masks
 train_generator = zip(image_generator, mask_generator)
-
+"""
 """
 ## Loss Function and Accuracy Metric
 - Accuracy: Intersection of prediction to label image over Union
@@ -345,12 +344,21 @@ model.compile(
       metrics=[iou_coef])
 
 logging.info('Starting Training')
+"""
 history = model.fit_generator(train_generator,
                               validation_data =(validation_image, validation_label),
                               steps_per_epoch=STEPS_PER_EPOCH,
                               epochs=EPOCHS,
                               callbacks = [checkpointer, csv_logger, lr_reducer, early_stopper])
 logging.info('Finished Training')
+"""
+history = model.fit(training_image,
+                    training_label,
+                    validation_data=(validation_image, validation_label),
+                    epochs=EPOCHS,
+                    batch_size=BATCH_SIZE,
+                    callbacks=[checkpointer, csv_logger, lr_reducer, early_stopper]
+                    )
 
 """## Model Evaluation"""
 
