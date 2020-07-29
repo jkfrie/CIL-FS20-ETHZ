@@ -50,7 +50,7 @@ rnd_seed = 4
 np.random.seed(rnd_seed)
 
 
-logging.basicConfig(filename='Logs/messages.log', level=logging.INFO, format="%(asctime)s.%(msecs)03d[%(levelname)-8s]: ")
+logging.basicConfig(filename='Logs/messages.log', level=logging.INFO, format="%(asctime)s.%(msecs)03d[%(levelname)s]:%(message)s")
 logging.info('Starting ' + MODEL_NAME)
 
 """## Load Images"""
@@ -242,11 +242,11 @@ def jaccard_coef(y_true, y_pred, smooth = 1e-12):
 
     return K.mean(jac)
 
-def combined_loss(y_true, y_pred):
-    return -K.log(jaccard_coef(y_true, y_pred)) + binary_crossentropy(y_pred, y_true)
-
 #def combined_loss(y_true, y_pred):
-#    return dice_coef_loss(y_true, y_pred) + binary_crossentropy(y_true, y_pred)
+#    return -K.log(jaccard_coef(y_true, y_pred)) + binary_crossentropy(y_pred, y_true)
+
+def combined_loss(y_true, y_pred):
+    return dice_coef_loss(y_true, y_pred) + binary_crossentropy(y_true, y_pred)
 
 """## Model: Fully CNN built in Keras"""
 
