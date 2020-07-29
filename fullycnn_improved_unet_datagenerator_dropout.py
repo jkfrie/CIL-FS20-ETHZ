@@ -49,7 +49,8 @@ VALIDATION_SPLIT = 0.1
 rnd_seed = 4
 np.random.seed(rnd_seed)
 
-logging.basicConfig(filename='Logs/messages.log',level=logging.INFO)
+
+logging.basicConfig(filename='Logs/messages.log', level=logging.INFO, format="%(asctime)s.%(msecs)03d[%(levelname)-8s]: ")
 logging.info('Starting ' + MODEL_NAME)
 
 """## Load Images"""
@@ -83,13 +84,9 @@ test_image = util.load_images(test_image_dir, files_test, "RGB")
 
 print("TRAINING:")
 print(training_image_original.shape)
-print(training_image_original.dtype)
 print(training_label_original.shape)
-print(training_label_original.dtype)
 print(training_image_extra.shape)
-print(training_image_extra.dtype)
 print(training_label_extra.shape)
-print(training_label_extra.dtype)
 print("TEST:")
 print(test_image.shape)
 
@@ -159,18 +156,15 @@ training_label = training_label.astype(np.float32)/255.0
 validation_image = validation_image.astype(np.float32)/255.0
 validation_label = validation_label.astype(np.float32)/255.0
 test_image = test_image.astype(np.float32)/255.0
-print(test_image.dtype)
 logging.info('Finished Preprocessing!')
 
 """
 ## Keras Data Generator
 We use the Keras Data Generator to augment our training data online while training. This is necessary because of memory consumption.
 """
-"""
 # We create an instance for the training images, training labels and test images
-data_gen_args = dict(rescale=1.0/255.0,
-                     #width_shift_range=0.1,
-                     #height_shift_range=0.1,
+data_gen_args = dict(width_shift_range=0.1,
+                     height_shift_range=0.1,
                      #zoom_range=0.05,
                      #shear_range=0.05,
                      horizontal_flip=True,
@@ -193,7 +187,7 @@ mask_generator = mask_datagen.flow(
 
 # Combine generators into one which yields image and masks
 train_generator = zip(image_generator, mask_generator)
-"""
+
 """
 ## Loss Function and Accuracy Metric
 - Accuracy: Intersection of prediction to label image over Union
@@ -248,11 +242,11 @@ def jaccard_coef(y_true, y_pred, smooth = 1e-12):
 
     return K.mean(jac)
 
-#def combined_loss(y_true, y_pred):
-#    return -K.log(jaccard_coef(y_true, y_pred)) + binary_crossentropy(y_pred, y_true)
-
 def combined_loss(y_true, y_pred):
-    return dice_coef_loss(y_true, y_pred) + binary_crossentropy(y_true, y_pred)
+    return -K.log(jaccard_coef(y_true, y_pred)) + binary_crossentropy(y_pred, y_true)
+
+#def combined_loss(y_true, y_pred):
+#    return dice_coef_loss(y_true, y_pred) + binary_crossentropy(y_true, y_pred)
 
 """## Model: Fully CNN built in Keras"""
 
@@ -336,20 +330,20 @@ early_stopper = keras.callbacks.EarlyStopping(monitor='val_loss', patience=12, v
 
 opt = keras.optimizers.Adam(LEARNING_RATE)
 #model = load_model("./Models/{}_model.h5".format(MODEL_NAME), custom_objects={'dice_coef_loss': dice_coef_loss, 'iou_coef': iou_coef})
-#opt = keras.optimizers.Nadam(lr=LEARNING_RATE)
+opt = keras.optimizers.Nadam(lr=LEARNING_RATE)
 logging.info('Compiling Model')
 model.compile(
       optimizer=opt,
-      loss=dice_coef_loss,
+      loss=combined_loss,
       metrics=[iou_coef])
 
 logging.info('Starting Training')
-"""
+
 history = model.fit_generator(train_generator,
-                              validation_data =(validation_image, validation_label),
+                              validation_data=(validation_image, validation_label),
                               steps_per_epoch=STEPS_PER_EPOCH,
                               epochs=EPOCHS,
-                              callbacks = [checkpointer, csv_logger, lr_reducer, early_stopper])
+                              callbacks=[checkpointer, csv_logger, lr_reducer, early_stopper])
 logging.info('Finished Training')
 """
 history = model.fit(training_image,
@@ -359,12 +353,12 @@ history = model.fit(training_image,
                     batch_size=BATCH_SIZE,
                     callbacks=[checkpointer, csv_logger, lr_reducer, early_stopper]
                     )
-
+"""
 """## Model Evaluation"""
 
 # Kaggle scores on validation images (mean score per image and overall mean score)
 logging.info('Evaluating Kaggle Score on Model')
-model = load_model("./Models/{}_model.h5".format(MODEL_NAME), custom_objects={'dice_coef_loss': dice_coef_loss, 'iou_coef': iou_coef})
+model = load_model("./Models/{}_model.h5".format(MODEL_NAME), custom_objects={'combined_loss': dice_coef_loss, 'iou_coef': iou_coef})
 predictions = model.predict(validation_image, batch_size=BATCH_SIZE, verbose=1)
 scores = util.validate_kaggle_score(validation_label, predictions)
 print(scores)
