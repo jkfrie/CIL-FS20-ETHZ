@@ -3,10 +3,15 @@
 import numpy as np
 from PIL import Image
 import cv2
+import os
 import imageio
 from scipy import ndimage
 from sklearn.metrics import f1_score
 from util.mask_to_submission import nparray_masks_to_patch_labels
+from util.mask_to_submission import masks_to_submission
+from keras.layers.core import Dropout
+from keras.layers.convolutional import Conv2D
+from keras.layers import BatchNormalization, Activation
 
 def load_images(path, filenames, pilmode):
     """
@@ -65,13 +70,21 @@ def add_rotated_images(images):
 
     for i in range(images.shape[0]):
         cur_image = Image.fromarray(images[i])
+        rotated_images.append(ndimage.rotate(cur_image, 22.5, reshape=False, mode='reflect'))
         rotated_images.append(ndimage.rotate(cur_image, 45, reshape=False, mode='reflect'))
+        rotated_images.append(ndimage.rotate(cur_image, 77.5, reshape=False, mode='reflect'))
         rotated_images.append(np.asarray(cur_image.rotate(90)))
+        rotated_images.append(ndimage.rotate(cur_image, 112.5, reshape=False, mode='reflect'))
         rotated_images.append(ndimage.rotate(cur_image, 135, reshape=False, mode='reflect'))
+        rotated_images.append(ndimage.rotate(cur_image, 157.5, reshape=False, mode='reflect'))
         rotated_images.append(np.asarray(cur_image.rotate(180)))
+        rotated_images.append(ndimage.rotate(cur_image, 202.5, reshape=False, mode='reflect'))
         rotated_images.append(ndimage.rotate(cur_image, 225, reshape=False, mode='reflect'))
+        rotated_images.append(ndimage.rotate(cur_image, 247.5, reshape=False, mode='reflect'))
         rotated_images.append(np.asarray(cur_image.rotate(270)))
+        rotated_images.append(ndimage.rotate(cur_image, 292.5, reshape=False, mode='reflect'))
         rotated_images.append(ndimage.rotate(cur_image, 315, reshape=False, mode='reflect'))
+        rotated_images.append(ndimage.rotate(cur_image, 337.5, reshape=False, mode='reflect'))
 
     rotated_images = np.concatenate((images, np.array(rotated_images)), axis=0)
 
@@ -154,10 +167,50 @@ def unpatchify(patches, width, height, img_width, img_height, stride):
     return np.array(images)
 
 def validate_kaggle_score(y_true, y_pred):
+    """
+    Validate according to kaggle metric
+    :param y_true: true masks
+    :param y_pred: predicted masks
+    :return: score
+    """
     y_true = nparray_masks_to_patch_labels(y_true)
     y_pred = nparray_masks_to_patch_labels(y_pred)
-    result = []
     result = []
     for k in range(y_true.shape[0]):
         result.append(f1_score(y_true[k], y_pred[k], zero_division=1))
     return result
+
+def create_submission(predictions, result_dir, filename, files_test):
+    """
+    Create a submission file
+    :param predictions: predicted masks
+    :param result_dir: directory to store results
+    :param filename: name and path of the submission file
+    :param files_test: list of test image names
+    """
+    n_test = len(files_test)
+    predictions = np.squeeze(predictions * 255).astype(np.uint8)
+    os.makedirs(result_dir, exist_ok=True)
+    [imageio.imwrite(result_dir + files_test[i], predictions[i], ) for i in range(n_test)]
+    files_predictions = os.listdir(result_dir)
+    files_predictions = [result_dir + files_predictions[i] for i in range(n_test)]
+    masks_to_submission(filename, *files_predictions)
+    print('Submission ready')
+
+def convolutional_block(inputs, numFilters = 32):
+    """
+    A Convolutional Block for the U-Net module
+    :param inputs: Input
+    :param numFilters: nr of output channels
+    :return: Output
+    """
+    x = Conv2D(numFilters, (3, 3), padding='same', kernel_initializer='he_normal')(inputs)
+    x = BatchNormalization()(x)
+    x = Activation("elu")(x)
+
+    x = Dropout(0.2)(x)
+
+    x = Conv2D(numFilters, (3, 3), padding='same', kernel_initializer='he_normal')(x)
+    x = BatchNormalization()(x)
+    x = Activation("elu")(x)
+    return x
