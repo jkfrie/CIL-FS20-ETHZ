@@ -29,7 +29,7 @@ IMG_HEIGHT = 608
 EPOCHS = 150
 STEPS_PER_EPOCH = 500
 LEARNING_RATE = 0.0001
-BATCH_SIZE = 16
+BATCH_SIZE = 8
 VALIDATION_SPLIT = 0.1
 rnd_seed = 10
 np.random.seed(rnd_seed)
@@ -43,7 +43,6 @@ logging.info('Starting ' + MODEL_NAME)
 logging.info('Loading training and test images')
 training_image_dir = "training_images/images/"
 training_label_dir = "training_images/groundtruth/"
-test_image_dir = "test_images/normal/"
 
 # Load filenames and split original training images, self generated training
 # images and test images.
@@ -65,15 +64,12 @@ training_image_original = util.load_images(training_image_dir, files_image_origi
 training_image_extra = util.load_images(training_image_dir, files_image_extra, "RGB")
 training_label_original = util.load_images(training_label_dir, files_label_original, "L")
 training_label_extra = util.load_images(training_label_dir, files_label_extra, "L")
-test_image = util.load_images(test_image_dir, files_test, "RGB")
 
 print("TRAINING:")
 print(training_image_original.shape)
 print(training_label_original.shape)
 print(training_image_extra.shape)
 print(training_label_extra.shape)
-print("TEST:")
-print(test_image.shape)
 
 logging.info('Finished loading!')
 
@@ -120,7 +116,6 @@ training_image = training_image.astype(np.float32)/255.0
 training_label = training_label.astype(np.float32)/255.0
 validation_image = validation_image.astype(np.float32)/255.0
 validation_label = validation_label.astype(np.float32)/255.0
-test_image = test_image.astype(np.float32)/255.0
 logging.info('Finished Preprocessing!')
 
 print(training_image.shape)
@@ -235,24 +230,3 @@ history = model.fit_generator(train_generator,
                               epochs=EPOCHS,
                               callbacks=[checkpointer, csv_logger, lr_reducer, early_stopper])
 logging.info('Finished Training')
-
-"""## Model Evaluation"""
-
-# Kaggle scores on validation images (mean score per image and overall mean score)
-logging.info('Evaluating Kaggle Score on Model')
-model = load_model("./Models/{}_model.h5".format(MODEL_NAME), custom_objects={'combined_loss': metrics.combined_loss, 'iou_coef': metrics.iou_coef})
-predictions = model.predict(validation_image, batch_size=BATCH_SIZE, verbose=1)
-scores = util.validate_kaggle_score(validation_label, predictions)
-print(scores)
-print(sum(scores)/len(scores))
-logging.info('Score = ' + str(sum(scores)/len(scores)))
-
-"""
-## Create Submission File
-Multiply image by 255 and convert to unit8 before storing s.t. it gets read out correctly by mask_to_submission!
-"""
-
-result_dir = './Results/Prediction_Images/{}/'.format(MODEL_NAME)
-submission_filename = './Results/Submissions/{}.csv'.format(MODEL_NAME)
-util.create_submission(predictions, result_dir, submission_filename, files_test)
-print('Submission ready')
