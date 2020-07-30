@@ -30,7 +30,7 @@ EPOCHS = 150
 STEPS_PER_EPOCH = 500
 LEARNING_RATE = 0.0001
 BATCH_SIZE = 8
-VALIDATION_SPLIT = 0.1
+VALIDATION_SPLIT = 0.5
 rnd_seed = 10
 np.random.seed(rnd_seed)
 
@@ -55,9 +55,6 @@ files_label = os.listdir(training_label_dir)
 files_label = natsort.natsorted(files_label)
 files_label_original = files_label[-100:]
 files_label_extra = files_label[:-100]
-
-files_test = os.listdir(test_image_dir)
-files_test = natsort.natsorted(files_test)
 
 # Load Images and labels
 training_image_original = util.load_images(training_image_dir, files_image_original, "RGB")

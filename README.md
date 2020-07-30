@@ -1,7 +1,7 @@
 # CIL-FS20
 ## Course Project of the Computational Intelligence Lab FS20 - Road Segmentation on Satellite Images
 
-In this paper, we propose a method to label roads in high-resolution aerial images on a per-pixel basis. With today's
+In this project, we propose a method to label roads in high-resolution aerial images on a per-pixel basis. With today's
 influx of satellite data, manual labeling has become infeasible and we need to rely on Computer Vision for processing.
 Our approach uses a U-Net, a fully convolutional neural network which was introduced in 2015 for biomedical image segmentation.
 Since neural networks require large amounts of training data, we have devised a method to automatically generate labeled
