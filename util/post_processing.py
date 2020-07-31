@@ -296,6 +296,7 @@ def hough_transform():
 
 # Load all test images, rotate them with ROTATIONS and store them in a list
 def prepare_test_images(n_test, test_image_dir, files_test, rotated_test_image_dir):
+    print('Rotating {} test images'.format(n_test))
     test_image_list = []
     margin = ROT_MARGIN
     for i in range(n_test):
@@ -311,7 +312,7 @@ def prepare_test_images(n_test, test_image_dir, files_test, rotated_test_image_d
                                                                                   resample=Image.BICUBIC)
             name = files_test[i].split('.png')
             im2.save(rotated_test_image_dir + name[0] + '_' + str(r) + '.png')
-        print('\tRotating ' + files_test[i])
+        # print('\tRotating ' + files_test[i])
 
     new_test_im_dir = os.listdir(rotated_test_image_dir)
     new_test_im_dir = natsort.natsorted(new_test_im_dir)
