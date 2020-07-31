@@ -70,21 +70,13 @@ def add_rotated_images(images):
 
     for i in range(images.shape[0]):
         cur_image = Image.fromarray(images[i])
-        rotated_images.append(ndimage.rotate(cur_image, 22.5, reshape=False, mode='reflect'))
         rotated_images.append(ndimage.rotate(cur_image, 45, reshape=False, mode='reflect'))
-        rotated_images.append(ndimage.rotate(cur_image, 77.5, reshape=False, mode='reflect'))
         rotated_images.append(np.asarray(cur_image.rotate(90)))
-        rotated_images.append(ndimage.rotate(cur_image, 112.5, reshape=False, mode='reflect'))
         rotated_images.append(ndimage.rotate(cur_image, 135, reshape=False, mode='reflect'))
-        rotated_images.append(ndimage.rotate(cur_image, 157.5, reshape=False, mode='reflect'))
         rotated_images.append(np.asarray(cur_image.rotate(180)))
-        rotated_images.append(ndimage.rotate(cur_image, 202.5, reshape=False, mode='reflect'))
         rotated_images.append(ndimage.rotate(cur_image, 225, reshape=False, mode='reflect'))
-        rotated_images.append(ndimage.rotate(cur_image, 247.5, reshape=False, mode='reflect'))
         rotated_images.append(np.asarray(cur_image.rotate(270)))
-        rotated_images.append(ndimage.rotate(cur_image, 292.5, reshape=False, mode='reflect'))
         rotated_images.append(ndimage.rotate(cur_image, 315, reshape=False, mode='reflect'))
-        rotated_images.append(ndimage.rotate(cur_image, 337.5, reshape=False, mode='reflect'))
 
     rotated_images = np.concatenate((images, np.array(rotated_images)), axis=0)
 
