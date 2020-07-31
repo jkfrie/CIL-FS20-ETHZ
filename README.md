@@ -28,5 +28,5 @@ pip install -r requirements.txt
    For that leave out the cells dedicated to training.
 
 ## Authors
-Jason Friedman, Anna Laura John, Renato Menta, Dominic Weibel 
+Jason Friedman, Anna Laura John, Renato Menta, Dominic Weibel
 
