@@ -317,7 +317,7 @@ def prepare_test_images(n_test, test_image_dir, files_test, rotated_test_image_d
     new_test_im_dir = os.listdir(rotated_test_image_dir)
     new_test_im_dir = natsort.natsorted(new_test_im_dir)
     test_image_list = [imageio.imread(rotated_test_image_dir + file) for file in new_test_im_dir]
-    return test_image_list
+    return np.array(test_image_list)
 
 
 # combine all 8 predicted Images with MODE and save to RESULT_DIR

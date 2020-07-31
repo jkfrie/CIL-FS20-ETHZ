@@ -33,7 +33,7 @@ def masks_to_submission(submission_filename, *image_filenames):
     with open(submission_filename, 'w') as f:
         f.write('id,prediction\n')
         for fn in image_filenames[0:]:
-            print(fn)
+            print(fn + 'test')
             f.writelines('{}\n'.format(s) for s in mask_to_submission_strings(fn))
 
 def nparray_masks_to_submission(submission_filename, *image_filenames):
