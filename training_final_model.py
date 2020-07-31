@@ -23,7 +23,7 @@ import logging
 """## Constants"""
 
 # Name of the current model
-MODEL_NAME = 'fullyCNN_datagenerator_improved_unet_dropout'
+MODEL_NAME = 'final_model'
 IMG_WIDTH = 608
 IMG_HEIGHT = 608
 EPOCHS = 150
