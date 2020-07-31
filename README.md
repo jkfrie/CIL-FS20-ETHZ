@@ -17,8 +17,9 @@ pip install -r requirements.txt
 ```
 
 ## Usage
-- `baseline2_pipeline.ipynb`: Run full pipeline of baseline 2 model with visuals.
-- `final_model.ipynb`: Run full pipeline of final model with visuals.
+- `baseline1_model.py`: Run this python file to create a submission file from the first baseline model directly.
+- `baseline2_model_pipeline.ipynb`: Run full pipeline of baseline 2 model with visuals.
+- `final_model_pipeline.ipynb`: Run full pipeline of final model with visuals.
 - `training_final_model.py`: Run only the training of the final model (for cluster).
 
 ## Reproducibility
