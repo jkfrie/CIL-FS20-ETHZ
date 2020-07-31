@@ -22,6 +22,8 @@ pip install -r requirements.txt
 - `final_model_pipeline.ipynb`: Run full pipeline of final model with visuals.
 - `training_final_model.py`: Run only the training of the final model (for cluster).
 
+- The Automatic data generator comes as seperate project called `Mapscrape`
+
 ## Reproducibility
 1. Run the `training_final_model.py` on the Leonhard Cluster with at least 36 GB of RAM
    or use the pretrained model in `Models\final_model.h5`
