@@ -19,7 +19,7 @@ pip install -r requirements.txt
 ## Usage
 - `baseline1_model.py`: Run this python file to create a submission file from the first baseline model directly.
 - `baseline2_model_pipeline.ipynb`: Run full pipeline of baseline 2 model with visuals.
-- `final_model_pipeline.ipynb`: Run full pipeline of final model with visuals.
+- `final_model_eval.ipynb`: Run eval of pretrained final model with visuals.
 - `training_final_model.py`: Run only the training of the final model (for cluster).
 
 - The Automatic data generator comes as seperate project called `Mapscrape`
@@ -27,8 +27,7 @@ pip install -r requirements.txt
 ## Reproducibility
 1. Run the `training_final_model.py` on the Leonhard Cluster with at least 36 GB of RAM
    or use the pretrained model in `Models\final_model.h5`
-2. Import your self-trained model into `Models\final_model.h5` and locally finish the pipeline on `final_model.ipynb`.
-   For that leave out the cells dedicated to training.
+2. Import your self-trained model into `Models\final_model.h5` and locally finish the pipeline on `final_model_eval.ipynb`.
 
 ## Authors
 Jason Friedman, Anna Laura John, Renato Menta, Dominic Weibel
