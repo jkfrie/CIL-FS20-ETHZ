@@ -181,6 +181,7 @@ def create_submission(predictions, result_dir, filename, files_test):
     :param files_test: list of test image names
     """
     n_test = len(files_test)
+    # only neccessary when running without post-processing
     # predictions = np.squeeze(predictions * 255).astype(np.uint8)
     # os.makedirs(result_dir, exist_ok=True)
     # [imageio.imwrite(result_dir + files_test[i], predictions[i], ) for i in range(n_test)]
