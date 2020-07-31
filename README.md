@@ -21,3 +21,13 @@ pip install -r requirements.txt
 - `final_model.ipynb`: Run full pipeline of final model with visuals.
 - `training_final_model.py`: Run only the training of the final model (for cluster).
 
+## Reproducibility
+1. Run the `training_final_model.py` on the Leonhard Cluster with at least 36 GB of RAM
+   or use the pretrained model in `Models\final_model.h5`
+2. Import your self-trained model into `Models\final_model.h5` and locally finish the pipeline on `final_model.ipynb`.
+   For that leave out the cells dedicated to training.
+
+## Authors
+Jason Friedman, Anna Laura John, Renato Menta, Dominic Weibel
+Department of Computer Science, ETH Zurich
+

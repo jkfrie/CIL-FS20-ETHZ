@@ -1,3 +1,5 @@
+""" Accuracy and Loss functions used for the training process """
+
 from keras import backend as K
 from keras.backend import binary_crossentropy
 

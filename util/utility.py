@@ -1,4 +1,4 @@
-""" Utility Functions """
+""" Utility Functions used throughout the pipeline"""
 
 import numpy as np
 from PIL import Image
