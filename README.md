@@ -1,4 +1,4 @@
-# CIL-FS20
+# CIL-FS20-ETHZ
 ## Course Project of the Computational Intelligence Lab FS20 - Road Segmentation on Satellite Images
 
 In this project, we propose a method to label roads in high-resolution aerial images on a per-pixel basis. With today's
